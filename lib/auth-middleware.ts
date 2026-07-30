@@ -10,40 +10,70 @@ export interface AuthResult {
   isAdmin: boolean;
 }
 
-export async function verifyAuth(req: NextRequest): Promise<AuthResult> {
-  const fail = { ok: false, uid: '', email: '', ibiNumber: '', isAdmin: false };
+export async function verifyAuth(
+  req: NextRequest
+): Promise<AuthResult> {
+  const FAIL: AuthResult = {
+    ok: false,
+    uid: '',
+    email: '',
+    ibiNumber: '',
+    isAdmin: false,
+  };
+
   try {
-    // 1. Try x-uid header (set by middleware after prior verification)
-    const headerUid = req.headers.get('x-uid');
-    if (headerUid) {
-      const snap = await adminDb.collection('members').doc(headerUid).get();
-      const data = snap.data() ?? {};
-      return {
-        ok:        true,
-        uid:       headerUid,
-        email:     data.email ?? '',
-        ibiNumber: data.ibiNumber ?? '',
-        isAdmin:   req.headers.get('x-is-admin') === '1',
-      };
+    // Authorization header first
+    const authHeader = req.headers.get('authorization');
+
+    // Bearer header carries a fresh ID token (client components call
+    // getIdToken() right before the request), while the __session cookie
+    // is a long-lived Firebase *session* cookie minted in
+    // /api/auth/session — these use different verify calls.
+    let token: string | null = null;
+    let isBearer = false;
+
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+      isBearer = true;
+    } else {
+      token = req.cookies.get('__session')?.value ?? null;
     }
 
-    // 2. Try Authorization Bearer token
-    const authHeader = req.headers.get('Authorization');
-    const token      = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : req.cookies.get('__session')?.value;
-    if (!token) return fail;
+    if (!token) return FAIL;
 
-    const decoded = await adminAuth.verifyIdToken(token);
-    const snap    = await adminDb.collection('members').doc(decoded.uid).get();
-    const data    = snap.data() ?? {};
+    const decoded = isBearer
+      ? await adminAuth.verifyIdToken(token, true)
+      : await adminAuth.verifySessionCookie(token, true);
+
+    // Read member profile
+    const memberSnap = await adminDb
+      .collection('members')
+      .doc(decoded.uid)
+      .get();
+
+    const memberData = memberSnap.exists
+      ? memberSnap.data()
+      : {};
+
+    // Check admin collection
+    const adminSnap = await adminDb
+      .collection('admins')
+      .doc(decoded.uid)
+      .get();
 
     return {
-      ok:        true,
-      uid:       decoded.uid,
-      email:     decoded.email ?? '',
-      ibiNumber: data.ibiNumber ?? '',
-      isAdmin:   decoded.admin === true,
+      ok: true,
+      uid: decoded.uid,
+      email: decoded.email ?? '',
+      ibiNumber: memberData?.ibiNumber ?? '',
+      isAdmin: adminSnap.exists,
     };
-  } catch {
-    return fail;
+  } catch (e: any) {
+    console.warn(
+      '[auth-middleware] Token verify failed:',
+      e.code ?? e.message
+    );
+
+    return FAIL;
   }
 }

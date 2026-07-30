@@ -1,0 +1,33 @@
+# .zap/rules.tsv
+#
+# Format: <Rule ID>\t<Threshold>\t# comment
+# Threshold: IGNORE | INFO | WARN | FAIL
+#
+# IMPORTANT: Run the first scan with this file nearly empty (as it is
+# now) and actually read the generated report/GitHub Issue before
+# adding anything here. Pre-suppressing alerts you haven't seen yet
+# defeats the point of running the scan — you'd be guessing which
+# findings are noise instead of knowing. Only add a rule ID here after:
+#   1. It fired in a real scan,
+#   2. You've read what it actually means, and
+#   3. You've concluded it's a genuine false positive or acceptable
+#      risk for this app — not just "it's annoying."
+#
+# A few near-universal, well-understood entries to start with —
+# these are standard for any modern SPA-style Next.js app and are
+# informational, not security findings:
+
+10109	INFO	# "Modern Web Application" — informational note that the app is a JS-heavy SPA; not a vulnerability.
+10112	INFO	# "Session Management Response Identified" — informational, not a finding.
+
+# Do NOT add entries here for these common real findings without fixing
+# the underlying issue first — they're genuinely worth fixing, not
+# suppressing:
+#   10035  Strict-Transport-Security Header Not Set
+#   10038  Content Security Policy (CSP) Header Not Set
+#   10020  X-Frame-Options Header Not Set / Missing Anti-clickjacking Header
+#   10021  X-Content-Type-Options Header Missing
+#   10054  Cookie without SameSite Attribute
+# If any of these fire, the right fix is adding the header/cookie flag
+# in next.config.js or middleware.ts — see the headers() config option —
+# not silencing the alert.

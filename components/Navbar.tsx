@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'firebase/auth';
+import LogoCircle from './LogoCircle';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 
 const NAV_LINKS = [
   { label: 'Home',       href: '/' },
   { label: 'About',      href: '/#about' },
+  { label: 'Chapters',   href: '/chapters' },
   { label: 'Membership', href: '/membership' },
   { label: 'Donate',     href: '/donate' },
   { label: 'News',       href: '/#news' },
@@ -48,11 +50,12 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    setDropOpen(false);
-    window.location.href = '/';
-  };
+const handleSignOut = async () => {
+  if (!auth) return;
+  await signOut(auth);
+  setDropOpen(false);
+  window.location.href = "/";
+};
 
   return (
     <>
@@ -84,31 +87,19 @@ export default function Navbar() {
         >
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: 'var(--grad-red)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px solid var(--ibi-gold)',
-              flexShrink: 0,
-            }}>
-              <span style={{ color: '#fff', fontWeight: 900, fontSize: 14, fontFamily: 'var(--font-display)' }}>IBI</span>
-            </div>
+            <LogoCircle size={40} />
             <div>
               <div style={{
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
-                fontSize: '1.1rem',
+                fontSize: '1.05rem',
                 color: 'var(--text-primary)',
-                lineHeight: 1.1,
+                lineHeight: 1.15,
               }}>
-                Igbobuigbo
+                Igbo Bu Igbo
               </div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--ibi-gold)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Business Union Intl
+              <div style={{ fontSize: '0.58rem', color: 'var(--ibi-gold)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Unity &amp; Cultural Preservation Initiative
               </div>
             </div>
           </Link>
@@ -154,44 +145,35 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="hide-mobile">
             {loading ? (
               <div className="spinner" style={{ borderColor: 'var(--border-gold)', borderTopColor: 'var(--ibi-gold)' }} />
-            ) : user && member ? (
-              /* Logged-in user dropdown */
+            ) : user ? (
+              /* Logged-in user dropdown — shows as soon as user exists, member data fills in async */
               <div ref={dropRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setDropOpen(!dropOpen)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
+                    display: 'flex', alignItems: 'center', gap: 10,
                     padding: '6px 16px 6px 6px',
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--border-gold)',
                     borderRadius: 'var(--radius-full)',
                     color: 'var(--text-primary)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    cursor: 'pointer', transition: 'all 0.2s',
                   }}
                 >
                   <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'var(--grad-red)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    color: '#fff',
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: member?.photoURL ? `url(${member.photoURL}) center/cover` : 'var(--grad-red)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.8rem', fontWeight: 700, color: '#fff', overflow: 'hidden',
                   }}>
-                    {member.displayName?.[0]?.toUpperCase() ?? 'M'}
+                    {!member?.photoURL && (member?.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? 'M')}
                   </div>
                   <div style={{ textAlign: 'left' }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.2 }}>
-                      {member.displayName.split(' ')[0]}
+                      {member?.displayName?.split(' ')[0] ?? user.displayName?.split(' ')[0] ?? 'Member'}
                     </div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--ibi-gold)', fontFamily: 'var(--font-mono)' }}>
-                      {member.ibiNumber}
+                      {member?.ibiNumber ?? (member ? 'Pending' : '…')}
                     </div>
                   </div>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ color: 'var(--text-muted)', transform: dropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -201,38 +183,30 @@ export default function Navbar() {
 
                 {dropOpen && (
                   <div style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    right: 0,
-                    minWidth: 220,
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-gold)',
-                    borderRadius: 'var(--radius-lg)',
-                    boxShadow: 'var(--shadow-lg)',
-                    overflow: 'hidden',
-                    animation: 'fadeInUp 0.2s var(--ease-out)',
-                    zIndex: 200,
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    minWidth: 220, background: 'var(--bg-card)',
+                    border: '1px solid var(--border-gold)', borderRadius: 'var(--radius-lg)',
+                    boxShadow: 'var(--shadow-lg)', overflow: 'hidden',
+                    animation: 'fadeInUp 0.2s var(--ease-out)', zIndex: 200,
                   }}>
                     <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 2 }}>Wallet Balance</div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ibi-gold)', fontFamily: 'var(--font-mono)' }}>
-                        ₦{(member.walletBalance ?? 0).toLocaleString()}
+                        ₦{(member?.walletBalance ?? 0).toLocaleString()}
                       </div>
                     </div>
                     {[
                       { label: 'Overview',    href: '/dashboard/overview' },
+                      { label: 'My Profile',  href: '/dashboard/profile' },
                       { label: 'My ID Card',  href: '/dashboard/idcard' },
                       { label: 'Wallet',      href: '/dashboard/wallet' },
                       { label: 'Affiliate',   href: '/dashboard/affiliate' },
                       { label: 'IBI Cards',   href: '/dashboard/cards' },
                     ].map(({ label, href }) => (
                       <Link key={href} href={href} onClick={() => setDropOpen(false)} style={{
-                        display: 'block',
-                        padding: '10px 16px',
-                        fontSize: '0.88rem',
-                        color: 'var(--text-secondary)',
-                        textDecoration: 'none',
-                        transition: 'all 0.15s',
+                        display: 'block', padding: '10px 16px',
+                        fontSize: '0.88rem', color: 'var(--text-secondary)',
+                        textDecoration: 'none', transition: 'all 0.15s',
                         borderBottom: '1px solid var(--border-subtle)',
                       }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
@@ -243,15 +217,10 @@ export default function Navbar() {
                     <button
                       onClick={handleSignOut}
                       style={{
-                        width: '100%',
-                        padding: '10px 16px',
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--ibi-red-light)',
-                        fontSize: '0.88rem',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        transition: 'background 0.15s',
+                        width: '100%', padding: '10px 16px',
+                        background: 'transparent', border: 'none',
+                        color: 'var(--ibi-red-light)', fontSize: '0.88rem',
+                        textAlign: 'left', cursor: 'pointer', transition: 'background 0.15s',
                       }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(200,16,46,0.08)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}

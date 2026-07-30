@@ -1,9 +1,13 @@
 // app/api/waitlist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { sendEmail } from '@/lib/brevo';
+import { sendEmailSmart as sendEmail } from '@/lib/emailRouter';
+import { rateLimitByIp } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimitByIp(req, 'waitlist', 10, 3600);
+  if (limited) return NextResponse.json(limited.body, { status: limited.status });
+
   const { email, name, feature } = await req.json();
 
   if (!email || !feature) {

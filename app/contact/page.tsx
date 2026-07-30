@@ -40,7 +40,7 @@ export default function ContactPage() {
 
   const CONTACT_INFO = [
     { icon: '📍', label: 'Head Office', value: '14 Zik Avenue, Awka, Anambra State, Nigeria' },
-    { icon: '📞', label: 'Phone',        value: '+234 800 IBI IGBO' },
+    { icon: '📞', label: 'Phone',        value: '+234 806 787 1203' },
     { icon: '✉️', label: 'Email',        value: 'info@igbobuigbo.org.ng' },
     { icon: '🕐', label: 'Hours',        value: 'Mon – Fri: 8am – 6pm WAT' },
   ];
@@ -89,11 +89,12 @@ export default function ContactPage() {
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {[
-                  { label: 'Facebook',  href: 'https://facebook.com/igbobuigbo',  color: '#1877F2' },
-                  { label: 'Twitter/X', href: 'https://twitter.com/igbobuigbo',   color: '#fff' },
-                  { label: 'Instagram', href: 'https://instagram.com/igbobuigbo', color: '#E1306C' },
-                  { label: 'LinkedIn',  href: 'https://linkedin.com/company/igbobuigbo', color: '#0077B5' },
-                  { label: 'YouTube',   href: 'https://youtube.com/@igbobuigbo',  color: '#FF0000' },
+                  { label: 'Facebook',  href: 'https://web.facebook.com/profile.php?id=100069371552458',  color: '#1877F2' },
+// Official WhatsApp green
+{ label: 'WhatsApp', href: 'https://wa.me/2348067871203', color: '#25D366' },
+
+// Darker community green
+{ label: 'WhatsApp Community', href: 'https://chat.whatsapp.com/DxruPES8fJP4V4zwMd6kPc', color: '#128C7E' },
                 ].map(({ label, href, color }) => (
                   <a
                     key={label}

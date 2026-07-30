@@ -5,20 +5,16 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 export async function POST(req: NextRequest) {
   try {
     const { token } = await req.json();
-    if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
+    if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
 
-    const decoded = await adminAuth.verifyIdToken(token, true /* check revoked */);
+    const decoded = await adminAuth.verifySessionCookie(token, true);
 
-    // Check if user is an admin
+    // Check admin status
     const adminSnap = await adminDb.collection('admins').doc(decoded.uid).get();
     const isAdmin   = adminSnap.exists || decoded.admin === true;
 
-    return NextResponse.json({
-      uid:   decoded.uid,
-      email: decoded.email ?? '',
-      admin: isAdmin,
-    });
+    return NextResponse.json({ uid:decoded.uid, email:decoded.email, admin:isAdmin });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? 'Token invalid' }, { status: 401 });
+    return NextResponse.json({ error: e.message }, { status: 401 });
   }
 }

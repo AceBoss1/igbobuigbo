@@ -83,7 +83,7 @@ export default function AffiliateButton({ compact = false }: AffiliateButtonProp
           Your Affiliate Link
         </div>
         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          Earn ₦500 commission for every new member you refer
+          Earn commission for every paid activity you attract
         </div>
       </div>
 

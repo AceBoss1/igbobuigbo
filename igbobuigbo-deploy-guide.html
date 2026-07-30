@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Igbo Bu Igbo — Go-Live Deployment Guide</title>
+<style>
+  :root {
+    --red:#C8102E; --gold:#D4AF37; --dark:#0A0C10;
+    --card:#16191F; --elevated:#1E2128; --border:rgba(212,175,55,0.15);
+    --text:#F5F0E8; --muted:#A8A29E; --faint:#6B7280;
+    --green:#4ade80; --blue:#60a5fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark);color:var(--text);line-height:1.7;font-size:15px}
+  a{color:var(--gold);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Sidebar nav */
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:240px;background:var(--card);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;padding:24px 0;flex-shrink:0;z-index:100}
+  .sidebar-logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .sidebar-logo h2{font-size:1rem;color:var(--gold);margin-bottom:2px}
+  .sidebar-logo p{font-size:0.7rem;color:var(--faint);text-transform:uppercase;letter-spacing:0.1em}
+  .nav-section{padding:0 12px;margin-bottom:8px}
+  .nav-label{font-size:0.65rem;color:var(--faint);text-transform:uppercase;letter-spacing:0.12em;padding:0 8px;margin-bottom:6px;font-weight:700}
+  .nav-item{display:block;padding:8px 12px;border-radius:8px;font-size:0.82rem;color:var(--muted);cursor:pointer;transition:all 0.15s;border:none;background:none;width:100%;text-align:left}
+  .nav-item:hover{background:rgba(212,175,55,0.08);color:var(--gold)}
+  .nav-item.active{background:rgba(212,175,55,0.1);color:var(--gold);border:1px solid rgba(212,175,55,0.25)}
+
+  /* Main content */
+  .main{margin-left:240px;padding:40px 48px;max-width:900px}
+  @media(max-width:768px){.sidebar{display:none}.main{margin-left:0;padding:24px 20px}}
+
+  /* Hero */
+  .hero{background:linear-gradient(135deg,#1a0005,#2d0008,#1a0005);border:1px solid var(--border);border-radius:16px;padding:40px;margin-bottom:40px;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(200,16,46,0.15),transparent 70%)}
+  .hero h1{font-size:2rem;color:#fff;margin-bottom:8px}
+  .hero p{color:rgba(255,255,255,0.65);font-size:1rem}
+  .hero .badge{display:inline-block;padding:4px 14px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);border-radius:99px;font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px}
+
+  /* Sections */
+  .section{display:none;animation:fadeIn 0.3s ease}
+  .section.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  h2{font-size:1.5rem;color:#fff;margin-bottom:8px}
+  h3{font-size:1.1rem;color:var(--gold);margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+  h3::before{content:'';display:block;width:4px;height:18px;background:var(--red);border-radius:2px}
+  h4{font-size:0.9rem;color:#fff;margin:20px 0 8px}
+  p{color:var(--muted);margin-bottom:12px}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+  .card-gold{border-color:rgba(212,175,55,0.35);background:rgba(212,175,55,0.04)}
+  .card-green{border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.04)}
+  .card-red{border-color:rgba(200,16,46,0.3);background:rgba(200,16,46,0.04)}
+  .card-blue{border-color:rgba(96,165,250,0.3);background:rgba(96,165,250,0.04)}
+
+  /* Step boxes */
+  .step{display:flex;gap:16px;margin-bottom:20px;align-items:flex-start}
+  .step-num{width:32px;height:32px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px}
+  .step-body{flex:1}
+  .step-body h4{margin:0 0 6px;font-size:0.95rem}
+  .step-body p{margin-bottom:0}
+
+  /* Code */
+  pre{background:#0d0d0d;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;overflow-x:auto;margin:12px 0;font-size:0.82rem;line-height:1.6}
+  code{font-family:'Consolas','Fira Code',monospace;font-size:0.85em}
+  pre code{color:#e2e8f0}
+  .inline-code{background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-family:monospace;font-size:0.85em;color:var(--gold)}
+
+  /* Badges */
+  .badge-green{display:inline-block;padding:2px 10px;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);border-radius:99px;font-size:0.72rem;font-weight:700;color:var(--green)}
+  .badge-gold{display:inline-block;padding:2px 10px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);border-radius:99px;font-size:0.72rem;font-weight:700;color:var(--gold)}
+  .badge-red{display:inline-block;padding:2px 10px;background:rgba(200,16,46,0.15);border:1px solid rgba(200,16,46,0.4);border-radius:99px;font-size:0.72rem;font-weight:700;color:#f87171}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:0.85rem;margin:16px 0}
+  th{padding:10px 14px;background:var(--elevated);color:var(--gold);text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border)}
+  td{padding:10px 14px;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.05)}
+  tr:hover td{background:rgba(255,255,255,0.02)}
+
+  /* Status grid */
+  .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0}
+  .status-item{background:var(--elevated);border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:10px}
+  .status-icon{font-size:1.2rem;flex-shrink:0}
+  .status-text{font-size:0.82rem;color:var(--muted)}
+  .status-text strong{color:var(--text);display:block;margin-bottom:2px;font-size:0.85rem}
+
+  /* Checklist */
+  .checklist{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--elevated);border-radius:8px;font-size:0.85rem;color:var(--muted)}
+  .check-icon{flex-shrink:0;margin-top:1px}
+
+  /* Progress bar */
+  .progress-bar{background:rgba(255,255,255,0.06);border-radius:99px;height:6px;overflow:hidden;margin:8px 0}
+  .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--red),var(--gold))}
+
+  /* Answer boxes */
+  .answer-box{background:var(--elevated);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:16px 20px;margin:16px 0}
+  .answer-box.green{border-left-color:var(--green)}
+  .answer-box.blue{border-left-color:var(--blue)}
+  .answer-box.red{border-left-color:#f87171}
+
+  /* Copy button */
+  .copy-btn{float:right;padding:3px 10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;font-size:0.7rem;color:var(--muted);cursor:pointer;font-family:inherit;margin-top:-2px}
+  .copy-btn:hover{background:rgba(212,175,55,0.15);color:var(--gold);border-color:rgba(212,175,55,0.3)}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ── SIDEBAR ─────────────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h2>🦅 Igbo Bu Igbo</h2>
+    <p>Deployment Guide 2026</p>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Overview</div>
+    <button class="nav-item active" onclick="show('qa')">5 Key Questions</button>
+    <button class="nav-item" onclick="show('status')">Launch Readiness</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Setup Steps</div>
+    <button class="nav-item" onclick="show('step1')">1 · Firebase Setup</button>
+    <button class="nav-item" onclick="show('step2')">2 · Env Variables</button>
+    <button class="nav-item" onclick="show('step3')">3 · Install & Test</button>
+    <button class="nav-item" onclick="show('step4')">4 · Firestore Rules & Indexes</button>
+    <button class="nav-item" onclick="show('step5')">5 · Grant Admin Access</button>
+    <button class="nav-item" onclick="show('step6')">6 · Deploy to Production</button>
+    <button class="nav-item" onclick="show('step7')">7 · Paystack Webhook</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Reference</div>
+    <button class="nav-item" onclick="show('ibi-numbers')">IBI Number Format</button>
+    <button class="nav-item" onclick="show('prefixes')">Reference Prefixes</button>
+    <button class="nav-item" onclick="show('admin')">Admin Panel Guide</button>
+    <button class="nav-item" onclick="show('pricing')">Pricing & Commission</button>
+    <button class="nav-item" onclick="show('wallet')">Wallet Without Paystack</button>
+    <button class="nav-item" onclick="show('pin-security')">🔒 Wallet PIN Security</button>
+    <button class="nav-item" onclick="show('notifications')">🔔 Notifications</button>
+    <button class="nav-item" onclick="show('affiliate')">Affiliate System</button>
+    <button class="nav-item" onclick="show('gaps')">⚠️ Known Gaps (Pre-Launch)</button>
+    <button class="nav-item" onclick="show('files')">File Manifest</button>
+  </div>
+</nav>
+
+<!-- ── MAIN ────────────────────────────────────────────────────── -->
+<main class="main">
+
+<!-- 5 KEY QUESTIONS -->
+<div class="section active" id="qa">
+  <div class="hero">
+    <div class="badge">IBI Go-Live Guide · 2026</div>
+    <h1>5 Questions Before Launch</h1>
+    <p>Everything you need to know to go live today — with or without Paystack, Termii, or CAC verification.</p>
+  </div>
+
+  <h3>1. How is the IBI number generated?</h3>
+  <div class="answer-box">
+    <p>Format: <span class="inline-code">[CHAPTER_CODE]/[10_RANDOM_DIGITS]</span></p>
+    <p>Examples: <span class="inline-code">LAG/3847291056</span> &nbsp;·&nbsp; <span class="inline-code">FCT/1029384756</span> &nbsp;·&nbsp; <span class="inline-code">GBR/5647382910</span></p>
+    <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;margin-top:8px;display:flex;flex-direction:column;gap:6px">
+      <li><strong style="color:var(--green)">Free tiers (Student/Youth)</strong> — IBI number generated <strong>instantly on registration</strong>. No admin action needed.</li>
+      <li><strong style="color:var(--gold)">Paid tiers</strong> — generated when admin clicks <strong>Approve</strong> in the <span class="inline-code">/admin</span> panel.</li>
+      <li>Chapter code = first 3 letters of chapter (e.g. Lagos → LAG, with manual overrides for FCT, Akwa Ibom, Cross River, UK, USA etc.)</li>
+    </ul>
+  </div>
+
+  <h3>2. How are pending memberships approved?</h3>
+  <div class="answer-box green">
+    <p>Visit <span class="inline-code">https://igbobuigbo.org.ng/admin</span> (after granting yourself admin — see Step 5).</p>
+    <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;margin-top:8px;display:flex;flex-direction:column;gap:6px">
+      <li>See all pending paid applications with name, email, chapter, tier, payment reference</li>
+      <li>Click <strong style="color:var(--green)">Approve</strong> → IBI number auto-generated, welcome email sent, affiliate code created</li>
+      <li>Click <strong style="color:#f87171">Reject</strong> → enter reason, rejection email sent to applicant</li>
+      <li><strong style="color:var(--green)">Free tiers auto-approve instantly</strong> — zero admin action required</li>
+    </ul>
+  </div>
+
+  <h3>3. How can the wallet work without Paystack?</h3>
+  <div class="answer-box blue">
+    <p>Admin can <strong>credit any wallet directly</strong> — no Paystack needed.</p>
+    <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;margin-top:8px;display:flex;flex-direction:column;gap:6px">
+      <li>Go to <span class="inline-code">/admin</span> → <strong>Credit Wallet</strong> tab</li>
+      <li>Enter member's IBI number, email, or Firebase UID + amount + note</li>
+      <li>Use for: onboarding pilot members, processing bank transfers manually, issuing bonuses</li>
+      <li>Members can transfer between each other once they have a balance</li>
+      <li>When Paystack is ready, members top up themselves via card/bank transfer/USSD</li>
+    </ul>
+  </div>
+
+  <h3>4. Where are photos and verification documents stored?</h3>
+  <div class="answer-box">
+    <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:6px">
+      <li><strong style="color:var(--text)">Profile photos</strong> — Cloudinary (configure <span class="inline-code">NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME</span> + upload preset)</li>
+      <li><strong style="color:var(--text)">For launch without Cloudinary</strong> — Photos simply won't upload. Card shows member initials as fallback. All other features work perfectly.</li>
+      <li><strong style="color:var(--text)">CAC/verification documents</strong> — Not yet implemented. Add later via Firebase Storage when CAC verification is required.</li>
+      <li><strong style="color:var(--text)">Member data</strong> — Firestore database (already configured)</li>
+    </ul>
+  </div>
+
+  <h3>5. Can the affiliate program start working now?</h3>
+  <div class="answer-box green">
+    <p><strong style="color:var(--green)">YES — affiliate works immediately on launch day.</strong></p>
+    <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;margin-top:8px;display:flex;flex-direction:column;gap:6px">
+      <li>Free members get their <span class="inline-code">affiliateCode</span> the moment they register (instant)</li>
+      <li>Paid members get their code the moment admin approves them</li>
+      <li>Share link: <span class="inline-code">igbobuigbo.org.ng/membership?ref=IBICHUKW7X3A</span></li>
+      <li>Commission: <strong>10%</strong> on paid registrations, <strong>5%</strong> on marketplace sales — both editable live from <span class="inline-code">/admin</span> → Pricing tab, no redeploy needed</li>
+      <li>Earnings tracked in <span class="inline-code">/dashboard/affiliate</span>, withdrawable to IBI Wallet</li>
+      <li>No Paystack or Termii needed for the affiliate tracking to work</li>
+    </ul>
+  </div>
+</div>
+
+<!-- LAUNCH READINESS -->
+<div class="section" id="status">
+  <h2>Launch Readiness Checklist</h2>
+  <p style="margin-bottom:24px">What works today vs what needs configuration.</p>
+
+  <h3>✅ Works Right Now (Zero Config)</h3>
+  <div class="checklist">
+    <div class="check-item"><span class="check-icon">✅</span><span>Free tier (Student/Youth) registration — instant IBI number, no payment</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Affiliate code generation — works immediately on registration</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>All dashboard pages — overview, ID card, wallet, affiliate, cards, profile, transfer</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Admin panel — approve/reject members, credit wallets, view all members</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>IBI Wallet — admin credit + member-to-member transfers</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Chapters page — all 43 chapters across 3 regions</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Homepage with cooperative programs, marketplace, membership tiers, advertise section</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Contact page, donate page, coming-soon pages</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>ID card download (Verve/AfriGo/Visa/Mastercard designs)</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Chapter transfer portal</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>All prices & commission rates editable live from <span class="inline-code">/admin</span> → Pricing tab — no code changes or redeploy needed</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Every payment path (registration, upgrade, donation, card order, wallet top-up) verifies the actual Paystack amount server-side before crediting anything</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Paystack webhook — server-side safety net if a member's browser closes right after paying, before their own callback completes</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Email verification link sent on registration, with a resend button in the dashboard for anyone still unverified</span></div>
+  </div>
+
+  <h3>⚙️ Needs Configuration (Add When Ready)</h3>
+  <div class="checklist">
+    <div class="check-item"><span class="check-icon">⚙️</span><span><strong>Paystack</strong> — for paid tier payments. Without it, paid tiers still accept applications (admin approves manually after bank confirmation).</span></div>
+    <div class="check-item"><span class="check-icon">⚙️</span><span><strong>Paystack Webhook URL</strong> — register <span class="inline-code">https://igbobuigbo.org.ng/api/webhooks/paystack</span> in the Paystack dashboard once Paystack is live. See Step 7. The app works without this, it just loses the safety net for interrupted payments.</span></div>
+    <div class="check-item"><span class="check-icon">⚙️</span><span><strong>Brevo (Email)</strong> — for welcome emails, approval notifications, and verification emails. Without it, emails are logged to console only.</span></div>
+    <div class="check-item"><span class="check-icon">⚙️</span><span><strong>Termii (SMS)</strong> — for SMS notifications. Without it, SMS are logged to console only.</span></div>
+    <div class="check-item"><span class="check-icon">⚙️</span><span><strong>Cloudinary</strong> — for profile photo uploads. Without it, ID cards show initials instead of photos.</span></div>
+    <div class="check-item"><span class="check-icon">⚙️</span><span><strong>EmailJS</strong> — for coming-soon waitlist emails. Waitlist still saves to Firestore without it.</span></div>
+  </div>
+
+  <h3>📊 Launch Priority Order</h3>
+  <table>
+    <tr><th>Priority</th><th>Task</th><th>Time</th><th>Impact</th></tr>
+    <tr><td><span class="badge-red">P0 — Now</span></td><td>Firebase Auth + Firestore + Rules + Indexes deployed</td><td>15 min</td><td>App works at all</td></tr>
+    <tr><td><span class="badge-red">P0 — Now</span></td><td>Grant admin access to your email</td><td>2 min</td><td>Can approve members</td></tr>
+    <tr><td><span class="badge-gold">P1 — Today</span></td><td>Deploy to Vercel with env vars</td><td>20 min</td><td>Live on domain</td></tr>
+    <tr><td><span class="badge-gold">P1 — Today</span></td><td>Seed pilot members with wallet credit</td><td>5 min</td><td>Wallet usable</td></tr>
+    <tr><td><span class="badge-green">P2 — Week 1</span></td><td>Brevo email notifications</td><td>30 min</td><td>Professional comms + verification emails</td></tr>
+    <tr><td><span class="badge-green">P2 — Week 1</span></td><td>Paystack live keys + webhook URL</td><td>1 hr</td><td>Paid registrations + interrupted-payment safety net</td></tr>
+    <tr><td><span class="badge-green">P2 — Week 1</span></td><td>Termii SMS</td><td>30 min</td><td>SMS alerts</td></tr>
+    <tr><td><span class="badge-green">P3 — Week 2</span></td><td>Cloudinary for photos</td><td>30 min</td><td>Photo on ID cards</td></tr>
+  </table>
+</div>
+
+<!-- STEP 1 -->
+<div class="section" id="step1">
+  <h2>Step 1 — Firebase Setup</h2>
+  <p>Takes about 10 minutes. You need 3 things: Auth enabled, Firestore created, Service Account key.</p>
+
+  <h3>A. Enable Firebase Authentication</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Open the Firebase Console</h4>
+      <p>Go to <a href="https://console.firebase.google.com/project/igbobuigbo-2cfc4/authentication" target="_blank">console.firebase.google.com/project/igbobuigbo-2cfc4/authentication</a></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Click "Get started"</h4>
+      <p>You'll see a big button in the centre of the page.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Enable Email/Password</h4>
+      <p>Sign-in method tab → Email/Password → toggle Enable → Save</p>
+    </div>
+  </div>
+
+  <h3>B. Create Firestore Database</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Open Firestore</h4>
+      <p><a href="https://console.firebase.google.com/project/igbobuigbo-2cfc4/firestore" target="_blank">console.firebase.google.com/project/igbobuigbo-2cfc4/firestore</a></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Click "Create database"</h4>
+      <p>Select <strong>Start in production mode</strong> → Next → Choose <strong>europe-west1</strong> (closest to Nigeria) → Enable</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Wait ~30 seconds</h4>
+      <p>Firestore will provision. You'll see the data panel when ready.</p>
+    </div>
+  </div>
+
+  <h3>C. Get Service Account Key (for Admin SDK)</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Go to Project Settings → Service Accounts</h4>
+      <p>Firebase Console → gear icon top-left → Project Settings → Service Accounts tab</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Generate new private key</h4>
+      <p>Click "Generate new private key" → "Generate Key" → a JSON file downloads.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Copy values from the JSON</h4>
+      <p>Open the downloaded JSON. You need: <span class="inline-code">project_id</span>, <span class="inline-code">client_email</span>, <span class="inline-code">private_key</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="section" id="step2">
+  <h2>Step 2 — Environment Variables</h2>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>⚠️ Important:</strong> The <span class="inline-code">FIREBASE_ADMIN_PRIVATE_KEY</span> must be on ONE line with literal <span class="inline-code">\n</span> between each line — not actual newlines. Copy it exactly from the downloaded JSON.</p>
+  </div>
+
+  <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>
+# 1. Copy the template
+cp .env.example .env.local
+
+# 2. Open and fill in .env.local
+</code></pre>
+
+  <h3>Minimum required for launch</h3>
+  <pre><code>
+# ── Firebase Client (from Firebase Console > Project Settings > Your Web App) ──
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=igbobuigbo-2cfc4.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=igbobuigbo-2cfc4
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=igbobuigbo-2cfc4.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
+
+# ── Firebase Admin (from downloaded service account JSON) ──────────────────
+FIREBASE_ADMIN_PROJECT_ID=igbobuigbo-2cfc4
+FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-xxx@igbobuigbo-2cfc4.iam.gserviceaccount.com
+FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvAIB...\n-----END PRIVATE KEY-----\n"
+
+# ── Admin Panel Bootstrap ──────────────────────────────────────────────────
+ADMIN_BOOTSTRAP_SECRET=change-this-to-anything-strong-123
+
+# ── Optional (app works without these) ────────────────────────────────────
+BREVO_API_KEY=               # Email notifications
+TERMII_API_KEY=              # SMS notifications
+PAYSTACK_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxx
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ibi_uploads
+</code></pre>
+
+  <h3>How to get Firebase Client config</h3>
+  <p>Firebase Console → Project Settings → Your Apps → Web app → click the config icon → copy the config object values.</p>
+</div>
+
+<!-- STEP 3 -->
+<div class="section" id="step3">
+  <h2>Step 3 — Install & Test Locally</h2>
+
+  <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Visit http://localhost:3000
+</code></pre>
+
+  <h3>What to test first</h3>
+  <div class="checklist">
+    <div class="check-item"><span class="check-icon">1️⃣</span><span>Homepage loads with hero, stats bar, cooperative programs, membership tiers</span></div>
+    <div class="check-item"><span class="check-icon">2️⃣</span><span>Register as Student/Youth at <span class="inline-code">/membership</span> — should succeed instantly with IBI number in success screen</span></div>
+    <div class="check-item"><span class="check-icon">3️⃣</span><span>Sign in at <span class="inline-code">/login</span> with the registered email — dashboard should load</span></div>
+    <div class="check-item"><span class="check-icon">4️⃣</span><span>Check <span class="inline-code">/dashboard/idcard</span> — card should render with your name</span></div>
+    <div class="check-item"><span class="check-icon">5️⃣</span><span>Check browser console — any "permission-denied" means you need Step 4</span></div>
+  </div>
+
+  <h3>Seed test member (optional)</h3>
+  <pre><code>
+npm run seed
+# Creates: test@igbobuigbo.org.ng / TestIBI1234!
+# With ₦25,000 wallet, LAG/3847291056 IBI number, professional tier
+</code></pre>
+
+  <div class="card card-red">
+    <p style="margin:0"><strong>If wallet shows ₦0</strong> — This means Firestore security rules are not deployed yet. Proceed to Step 4.</p>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="section" id="step4">
+  <h2>Step 4 — Deploy Firestore Security Rules & Indexes</h2>
+  <p>This is the <strong>critical step</strong> that fixes "wallet showing ₦0" and allows members to read their own data.</p>
+
+  <div class="card card-red">
+    <p style="margin:0"><strong>Without this step:</strong> The wallet always shows ₦0, ID card may not load, and dashboard data won't display — even though the data is in Firestore. The rules file is already written for you at <span class="inline-code">firestore.rules</span> in the project root.</p>
+  </div>
+
+  <h3>Install Firebase CLI (if not already installed)</h3>
+  <pre><code>npm install -g firebase-tools</code></pre>
+
+  <h3>Login and deploy</h3>
+  <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>
+# Login to Firebase
+firebase login
+
+# Initialize (if first time — select Firestore only, use existing project)
+firebase init firestore
+
+# Deploy rules
+firebase deploy --only firestore:rules
+
+# Deploy composite indexes (needed for admin/affiliate/card-history queries)
+firebase deploy --only firestore:indexes
+</code></pre>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Indexes take a few minutes to build</strong> after deploying — check progress at <a href="https://console.firebase.google.com/project/igbobuigbo-2cfc4/firestore/indexes" target="_blank">Firebase Console → Firestore → Indexes</a>. Queries that need them will error until the build finishes.</p>
+  </div>
+
+  <h3>What the rules do</h3>
+  <table>
+    <tr><th>Collection</th><th>Who can read</th><th>Who can write</th></tr>
+    <tr><td>members/{uid}</td><td>The member themselves + admins</td><td>The member (own doc) + admins</td></tr>
+    <tr><td>transactions</td><td>Owner (where uid matches)</td><td>Server only (API routes)</td></tr>
+    <tr><td>referrals / affiliateStats</td><td>The referrer</td><td>Server only</td></tr>
+    <tr><td>cardOrders / transfers</td><td>The member who owns it</td><td>Server only</td></tr>
+    <tr><td>events / news / stats / causeTotals</td><td>Everyone (public)</td><td>Server only</td></tr>
+    <tr><td><span class="inline-code">settings/pricing</span></td><td>Everyone (public) — needs to show on public membership/donate pages</td><td>Admins only, from <span class="inline-code">/admin</span> → Pricing tab</td></tr>
+  </table>
+
+  <h3>What the indexes do</h3>
+  <table>
+    <tr><th>Collection</th><th>Fields</th><th>Powers</th></tr>
+    <tr><td>events</td><td>active + date</td><td>Homepage upcoming events list</td></tr>
+    <tr><td>news</td><td>published + createdAt</td><td>Homepage news feed</td></tr>
+    <tr><td>cardOrders</td><td>uid + createdAt</td><td>Member's card order history</td></tr>
+    <tr><td>transactions</td><td>uid + createdAt</td><td>Wallet statement chronological ordering</td></tr>
+    <tr><td>memberUpgrades</td><td>uid + createdAt</td><td>Tier upgrade history</td></tr>
+  </table>
+  <p style="font-size:0.85rem">Only queries that combine an equality filter with an <span class="inline-code">orderBy</span> on a <em>different</em> field need a composite index — Firestore handles multi-equality (<span class="inline-code">where().where()</span>) queries natively, no index required.</p>
+</div>
+
+<!-- STEP 5 -->
+<div class="section" id="step5">
+  <h2>Step 5 — Grant Admin Access</h2>
+  <p>Do this after registering your own account. You need to be an admin to access <span class="inline-code">/admin</span>.</p>
+
+  <h3>Register your account first</h3>
+  <p>Go to <span class="inline-code">/membership</span> and register with your email. You can pick any tier.</p>
+
+  <h3>Grant admin via API call</h3>
+  <p>Replace <span class="inline-code">your@email.com</span> and <span class="inline-code">your-secret</span> with your actual values from <span class="inline-code">.env.local</span>:</p>
+
+  <h4>Using curl (Mac/Linux/WSL):</h4>
+  <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://igbobuigbo.org.ng/api/admin/set-admin \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your@email.com","secret":"your-admin-bootstrap-secret"}'</code></pre>
+
+  <h4>Using PowerShell (Windows):</h4>
+  <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>Invoke-RestMethod -Uri "https://igbobuigbo.org.ng/api/admin/set-admin" `
+  -Method POST -ContentType "application/json" `
+  -Body '{"email":"your@email.com","secret":"your-admin-bootstrap-secret"}'</code></pre>
+
+  <h4>Locally (before deployment):</h4>
+  <pre><code>curl -X POST http://localhost:3000/api/admin/set-admin \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your@email.com","secret":"your-admin-bootstrap-secret"}'</code></pre>
+
+  <div class="card card-green">
+    <p style="margin:0"><strong>Success response:</strong> <span class="inline-code">{"success":true,"uid":"...","message":"your@email.com is now an admin"}</span></p>
+    <p style="margin:8px 0 0">Then sign out and sign back in — visit <span class="inline-code">/admin</span> to confirm.</p>
+  </div>
+
+  <h3>Add more admins</h3>
+  <p>Repeat the same API call with different email addresses. All admins can see the admin panel and approve members.</p>
+</div>
+
+<!-- STEP 6 -->
+<div class="section" id="step6">
+  <h2>Step 6 — Deploy to Production</h2>
+
+  <h3>Option A — Vercel (Recommended)</h3>
+  <pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel --prod
+</code></pre>
+  <p>Then go to <strong>Vercel Dashboard → Your Project → Settings → Environment Variables</strong> and add all variables from your <span class="inline-code">.env.local</span> file.</p>
+
+  <div class="card card-red">
+    <p style="margin:0"><strong>Important for Vercel:</strong> The <span class="inline-code">FIREBASE_ADMIN_PRIVATE_KEY</span> must be pasted with actual newlines in Vercel's env var editor (not <span class="inline-code">\n</span>). Or enable "Escape newlines" option in Vercel.</p>
+  </div>
+
+  <h3>Option B — Custom Server / VPS</h3>
+  <pre><code>
+npm run build
+npm start
+# Runs on port 3000 by default
+# Use Nginx as reverse proxy on port 80/443
+</code></pre>
+
+  <h3>Connect your domain</h3>
+  <p>In Vercel: Settings → Domains → Add <span class="inline-code">igbobuigbo.org.ng</span> → update DNS CNAME to Vercel's provided value.</p>
+
+  <h3>Deploy Firestore rules to production</h3>
+  <pre><code>firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes</code></pre>
+  <p>Run this every time you change <span class="inline-code">firestore.rules</span> or <span class="inline-code">firestore.indexes.json</span>.</p>
+</div>
+
+<!-- STEP 7 -->
+<div class="section" id="step7">
+  <h2>Step 7 — Configure the Paystack Webhook</h2>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>What this does:</strong> Every payment flow (registration, upgrade, donation, card order, wallet top-up) already verifies and records itself when the member's browser calls back after paying. This webhook is a <strong>safety net</strong> for the rare case where that never happens — the tab closes right after paying, the network drops, etc. Without it configured, the app still works fully; you just lose that safety net.</p>
+  </div>
+
+  <h3>1. Get your webhook URL</h3>
+  <pre><code>https://igbobuigbo.org.ng/api/webhooks/paystack</code></pre>
+
+  <h3>2. Register it in the Paystack Dashboard</h3>
+  <div class="step">
+    <div class="step-num">1</div><div class="step-body"><h4>Go to Settings → API Keys & Webhooks</h4><p><a href="https://dashboard.paystack.com/#/settings/developer" target="_blank">dashboard.paystack.com/#/settings/developer</a></p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div><div class="step-body"><h4>Paste the webhook URL</h4><p>Into the "Webhook URL" field, and save.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div><div class="step-body"><h4>No separate webhook secret needed</h4><p>Paystack signs webhook requests using your existing <span class="inline-code">PAYSTACK_SECRET_KEY</span> — the same one already in your env vars. Nothing new to generate or store.</p></div>
+  </div>
+
+  <h3>How it decides what to do</h3>
+  <p>The webhook reads the <span class="inline-code">event.event</span> field (only acts on <span class="inline-code">charge.success</span>) and routes by the payment reference's prefix — see the <a href="#" onclick="show('prefixes');return false">Reference Prefixes</a> page for the full table. For each prefix it:</p>
+  <ol style="padding-left:20px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:6px">
+    <li>Checks if the primary route (the member's own callback) already recorded this reference — if so, does nothing.</li>
+    <li>If nothing was recorded yet, completes the same action the primary route would have (credit wallet, grant tier upgrade, record donation, or create card order) using the payment metadata Paystack echoes back.</li>
+  </ol>
+
+  <div class="card card-blue">
+    <p style="margin:0"><strong>Registration (<span class="inline-code">IBI-REG-</span>) is the one exception</strong> — the webhook can't safely auto-create a Firebase Auth account (it has no password to set), so instead it emails <span class="inline-code">finance@igbobuigbo.org.ng</span> to flag a paid registration that looks stuck, for manual follow-up.</p>
+  </div>
+
+  <h3>Testing it</h3>
+  <p>Paystack Dashboard → Settings → API Keys & Webhooks → your webhook → <strong>Send test webhook</strong>. Check your server logs for <span class="inline-code">[webhook/paystack]</span> lines, and confirm you get a <span class="inline-code">200</span> response back to Paystack.</p>
+</div>
+
+<!-- IBI NUMBERS -->
+<div class="section" id="ibi-numbers">
+  <h2>IBI Number Format Reference</h2>
+  <p>Format: <span class="inline-code">[CHAPTER_CODE]/[10_RANDOM_DIGITS]</span></p>
+
+  <table>
+    <tr><th>Chapter</th><th>Code</th><th>Example</th></tr>
+    <tr><td>Lagos State</td><td>LAG</td><td>LAG/3847291056</td></tr>
+    <tr><td>Enugu State</td><td>ENU</td><td>ENU/1029384756</td></tr>
+    <tr><td>FCT Abuja</td><td>FCT</td><td>FCT/5647382910</td></tr>
+    <tr><td>Anambra State</td><td>ANA</td><td>ANA/6574839201</td></tr>
+    <tr><td>Imo State</td><td>IMO</td><td>IMO/8374920156</td></tr>
+    <tr><td>Abia State</td><td>ABI</td><td>ABI/2938471650</td></tr>
+    <tr><td>Ebonyi State</td><td>EBO</td><td>EBO/7483920165</td></tr>
+    <tr><td>Rivers State</td><td>RIV</td><td>RIV/0192837465</td></tr>
+    <tr><td>Delta State</td><td>DEL</td><td>DEL/4728391056</td></tr>
+    <tr><td>Akwa Ibom</td><td>AKI</td><td>AKI/9384710265</td></tr>
+    <tr><td>Cross River</td><td>CRS</td><td>CRS/1738291046</td></tr>
+    <tr><td>United Kingdom</td><td>GBR</td><td>GBR/5647382910</td></tr>
+    <tr><td>United States</td><td>USA</td><td>USA/2938471650</td></tr>
+    <tr><td>South Africa</td><td>ZAF</td><td>ZAF/8473920156</td></tr>
+    <tr><td>UAE & Middle East</td><td>UAE</td><td>UAE/3847291056</td></tr>
+    <tr><td>All other chapters</td><td>First 3 letters</td><td>KAN/1234567890</td></tr>
+  </table>
+
+  <div class="card card-green" style="margin-top:16px">
+    <p style="margin:0"><strong>Collision probability:</strong> With 10 random digits (10 billion possibilities) per chapter code, collisions are effectively impossible. The system does not currently check for duplicates but the math makes it safe.</p>
+  </div>
+</div>
+
+<!-- PREFIXES -->
+<div class="section" id="prefixes">
+  <h2>Reference Code Prefixes</h2>
+  <p>Every transaction, document, and identity reference used across the platform. Full source of truth: <span class="inline-code">PREFIXES.md</span> in the project root. Every reference is verifiable at <a href="https://igbobuigbo.org.ng/verify" target="_blank">igbobuigbo.org.ng/verify</a>.</p>
+
+  <h3>1 · Paystack Payment References</h3>
+  <p style="font-size:0.85rem">Generated client-side before opening Paystack. Format: <span class="inline-code">PREFIX-{Date.now()}</span></p>
+  <table>
+    <tr><th>Prefix</th><th>Example</th><th>Trigger</th><th>Firestore Collection</th></tr>
+    <tr><td><span class="inline-code">IBI-REG-</span></td><td>IBI-REG-1782472000000</td><td>New membership registration</td><td>memberRegistrations</td></tr>
+    <tr><td><span class="inline-code">IBI-UPG-</span></td><td>IBI-UPG-1782472678526</td><td>Membership tier upgrade (Paystack)</td><td>memberUpgrades</td></tr>
+    <tr><td><span class="inline-code">IBI-DON-</span></td><td>IBI-DON-1782472000000</td><td>Donation (Paystack)</td><td>donations</td></tr>
+    <tr><td><span class="inline-code">IBI-CARD-</span></td><td>IBI-CARD-1782472000000</td><td>IBI Card purchase (Paystack)</td><td>cardOrders + transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-WLT-</span></td><td>IBI-WLT-1782472000000</td><td>Wallet top-up (Paystack)</td><td>transactions</td></tr>
+  </table>
+
+  <h3>2 · Wallet Transaction References</h3>
+  <p style="font-size:0.85rem">Generated server-side when IBI Wallet is the payment method.</p>
+  <table>
+    <tr><th>Prefix</th><th>Example</th><th>Description</th><th>Firestore Collection</th></tr>
+    <tr><td><span class="inline-code">TRF-</span></td><td>TRF-MQMS6JV1</td><td>Wallet-to-wallet transfer</td><td>transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-TRF-</span></td><td>IBI-TRF-1782472000000</td><td>Internal wallet transfer (alternate)</td><td>transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-UPG-WLT-</span></td><td>IBI-UPG-WLT-1782342183999</td><td>Membership upgrade via IBI Wallet</td><td>memberUpgrades + transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-DON-WLT-</span></td><td>IBI-DON-WLT-1782472000000</td><td>Donation via IBI Wallet</td><td>donations + transactions</td></tr>
+    <tr><td><span class="inline-code">CARD-</span></td><td>CARD-1781839496090</td><td>Card issuance debit via wallet</td><td>transactions + cardOrders</td></tr>
+  </table>
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Why <span class="inline-code">IBI-DON-WLT-</span> is separate from <span class="inline-code">IBI-DON-</span>:</strong> if both Paystack and wallet donations shared one prefix, they'd be indistinguishable in statements and the verify portal. <span class="inline-code">/api/donate/route.ts</span> generates <span class="inline-code">IBI-DON-WLT-{timestamp}</span> server-side specifically for <span class="inline-code">method === 'wallet'</span> to keep them separate.</p>
+  </div>
+
+  <h3>2a · Chapter / Region Transfer References</h3>
+  <p style="font-size:0.85rem">Generated server-side by <span class="inline-code">/api/membership/transfer</span> — <strong>not</strong> a money-moving reference. Stored in its own <span class="inline-code">transfers</span> collection, never <span class="inline-code">transactions</span>.</p>
+  <table>
+    <tr><th>Prefix</th><th>Example</th><th>Description</th><th>Firestore Collection</th></tr>
+    <tr><td><span class="inline-code">IBI-CHTRF-</span></td><td>IBI-CHTRF-MRUOXLGC</td><td>Chapter/region membership transfer application</td><td>transfers</td></tr>
+  </table>
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Fixed collision:</strong> this used to share the plain <span class="inline-code">TRF-</span> prefix with wallet-to-wallet money transfers above — both generated as <span class="inline-code">PREFIX-{Date.now().toString(36).toUpperCase()}</span>, so the two were textually indistinguishable. The verify portal hard-routes any <span class="inline-code">TRF-*</span> ref to the <span class="inline-code">transactions</span> collection, so a chapter transfer ref could never be found there — and there was no admin route reading the <span class="inline-code">transfers</span> collection at all, so pending applications were invisible to admins too. <span class="inline-code">IBI-CHTRF-</span> removes the collision; <span class="inline-code">/verify</span> and the Admin Panel's Chapter Transfers tab both handle it as its own type now, and approval/rejection fires a bell 🔔 notification plus email/SMS to the member.</p>
+  </div>
+
+  <h3>2b · Purse Wallet Addresses &amp; Manual Credit References</h3>
+  <p style="font-size:0.85rem">National/regional/chapter purse wallets — <span class="inline-code">lib/orgWallets.ts</span>. Every scope gets exactly TWO wallets (main + donation), address deterministic, not random.</p>
+  <table>
+    <tr><th>Format</th><th>Example</th><th>Description</th></tr>
+    <tr><td><span class="inline-code">{CHAPTER_CODE}/0000000001</span></td><td>ANA/0000000001</td><td>Chapter main purse</td></tr>
+    <tr><td><span class="inline-code">{CHAPTER_CODE}/0000000002</span></td><td>ANA/0000000002</td><td>Chapter donation purse</td></tr>
+    <tr><td><span class="inline-code">{REGION_CODE}/0000000001</span></td><td>ISS/0000000001</td><td>Regional main purse (ISS=Region 1, NIS=Region 2, GDS=Region 3)</td></tr>
+    <tr><td><span class="inline-code">{REGION_CODE}/0000000002</span></td><td>ISS/0000000002</td><td>Regional donation purse</td></tr>
+    <tr><td><span class="inline-code">IBI/0000000001</span></td><td>—</td><td>National main purse</td></tr>
+    <tr><td><span class="inline-code">IBI/0000000002</span></td><td>—</td><td>National donation purse</td></tr>
+    <tr><td><span class="inline-code">IBI/0000000003</span></td><td>—</td><td><strong>National grant purse — national scope only</strong></td></tr>
+    <tr><td><span class="inline-code">ORGWLT-{timestamp}</span></td><td>ORGWLT-1784856801943</td><td>Manual admin credit to any of the above (e.g. a bank transfer received outside Paystack)</td></tr>
+  </table>
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Grants are national-only by design, not by current omission.</strong> Regions and chapters do not apply for or hold grant funds independently — <span class="inline-code">getOrCreateOrgWalletSet()</span> only ever creates a <span class="inline-code">grant</span> wallet for the national scope, and <span class="inline-code">creditOrgWallet()</span> throws if anyone tries to credit a grant wallet at the region or chapter level. When grant money needs to reach a region or chapter, that's a supervised transfer OUT of <span class="inline-code">IBI/0000000003</span> into that scope's ordinary main purse — not a grant wallet of its own. The actual transfer mechanism is Phase 2, same as auto-remittance — this just establishes where grant funds live in the meantime, consistent with the constitution's Article 8 income sources ("donations, grants and contributions") — full text at <a href="/constitution">igbobuigbo.org.ng/constitution</a>.</p>
+  </div>
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Address/Member Number collision:</strong> a purse wallet address is textually identical in shape to a member's IBI Number (<span class="inline-code">[A-Z]{2,8}/\d{10}</span>) — e.g. <span class="inline-code">ANA/0000000001</span> looks exactly like a member number from the Anambra chapter. <span class="inline-code">/verify</span> handles this by trying the <span class="inline-code">members</span> collection first (existing behavior); if no member matches, it falls back to checking <span class="inline-code">orgWallets</span> by address before giving up (<span class="inline-code">verifyMemberOrOrgWallet()</span>). Balance is deliberately not shown on the public wallet result — only which chapter/region/national body it belongs to and its purse type.</p>
+  </div>
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Chapter donation attribution:</strong> a donation credits a chapter's donation purse either because the donor explicitly picked that chapter from the donate form's dropdown, or — as a fallback when they didn't — a best-effort match against the chapter name mentioned in their optional message field (<span class="inline-code">matchChapterFromText()</span>). No match on either → credits the national donation purse instead. <strong>Lazy creation:</strong> a chapter or region's wallet set (both main and donation) is created automatically the first time any donation or due touches that scope — most of the 43 chapters won't have wallets at all until their first transaction. <span class="inline-code">/verify</span> also provisions a wallet set on lookup if missing, for any address positively matching a real chapter/region/national code — so checking a legitimate but not-yet-used wallet (e.g. a grant reviewer verifying <span class="inline-code">IBI/0000000003</span> before IBI's first grant) shows "exists, ₦0 received so far," not "not found." Never provisions for an arbitrary guessed code.</p>
+  </div>
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Public transparency vs. private balance:</strong> the public <span class="inline-code">/verify</span> result shows <span class="inline-code">totalReceived</span> — a cumulative total that only ever increases, even once Phase 2 remittances start moving money back out — never the live <span class="inline-code">balance</span>. Publishing exact current cash-on-hand for a small org's purse is a solicitation/targeting risk with no offsetting transparency benefit; the cumulative total already gives a reviewer or auditor everything needed to independently verify real financial activity. Live balance stays visible to admins only, in the Org Wallets tab.</p>
+  </div>
+
+  <h3>3 · Admin & System References</h3>
+  <table>
+    <tr><th>Prefix</th><th>Example</th><th>Description</th><th>Firestore Collection</th></tr>
+    <tr><td><span class="inline-code">ADMIN-</span></td><td>ADMIN-1781990234702</td><td>Admin credit / debit / manual adjustment</td><td>transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-AFF-</span></td><td>IBI-AFF-SEED1</td><td>Affiliate commission credit</td><td>transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-BONUS-</span></td><td>IBI-BONUS-1782472000000</td><td>Platform bonus credit</td><td>transactions</td></tr>
+    <tr><td><span class="inline-code">IBI-REF-</span></td><td>IBI-REF-1782472000000</td><td>Referral reward credit</td><td>transactions</td></tr>
+  </table>
+
+  <h3>4 · Document References</h3>
+  <table>
+    <tr><th>Prefix</th><th>Format</th><th>Description</th></tr>
+    <tr><td><span class="inline-code">IBI-STMT-</span></td><td>IBI-STMT-{CHAPTER}-{DIGITS}_{YYYYMMDD}-{YYYYMMDD}</td><td>Wallet statement PDF</td></tr>
+    <tr><td><span class="inline-code">IBI-WYB-</span></td><td>IBI-WYB-{alphanumeric}</td><td>Delivery / logistics parcel tracking</td></tr>
+  </table>
+  <p style="font-size:0.85rem">Statement example: <span class="inline-code">IBI-STMT-OTH-8263354454_20260521-20260621</span> — verified at <span class="inline-code">/verify?ref=IBI-STMT-OTH-...&key={AUTH_KEY}</span></p>
+
+  <h3>5 · Identity References</h3>
+  <table>
+    <tr><th>Format</th><th>Example</th><th>Description</th></tr>
+    <tr><td><span class="inline-code">{CHAPTER}/{10DIGITS}</span></td><td>ANA/8263354454</td><td>Nigerian chapter member</td></tr>
+    <tr><td><span class="inline-code">{CHAPTER}/{10DIGITS}</span></td><td>OTH/8263354454</td><td>Overseas / Other chapter member</td></tr>
+  </table>
+
+  <h3>6 · Verify Portal Auto-Detection (in priority order)</h3>
+  <pre><code>IBI-STMT-*        → Wallet Statement      (requires &key= Auth Key param)
+IBI-CHTRF-*       → Chapter/Region Transfer Application
+IBI-UPG-WLT-*     → Upgrade via Wallet
+IBI-UPG-*         → Upgrade via Paystack
+IBI-DON-WLT-*     → Donation via Wallet
+IBI-DON-*         → Donation via Paystack
+ORGWLT-*          → Purse Wallet Manual Credit (admin action)
+IBI-AFF-*         → Affiliate Commission
+IBI-BONUS-*       → Bonus Credit
+IBI-REF-*         → Referral Reward
+ADMIN-*           → Admin Credit / Adjustment
+IBI-CARD-* / CARD-* → Card Issuance
+TRF-* / IBI-TRF-* / IBI-WLT-* → Wallet Transaction / Top-Up
+IBI-WYB-*         → Parcel / Logistics Tracking
+[A-Z]{2,8}/\d{10} → Member Identity (IBI Number) — OR a Purse Wallet
+                    address (ANA/0000000001) if no member matches; see 2b</code></pre>
+  <p style="font-size:0.85rem">Detection is ordered — more specific prefixes (<span class="inline-code">IBI-DON-WLT-</span>, <span class="inline-code">IBI-CHTRF-</span>) are checked before general ones (<span class="inline-code">IBI-DON-</span>, <span class="inline-code">TRF-</span>) to avoid misclassification. <span class="inline-code">IBI-CHTRF-</span> in particular MUST be checked before the generic <span class="inline-code">TRF-</span> match, since stripping the <span class="inline-code">IBI-</span> leaves a string that still starts with <span class="inline-code">TRF</span>. The Paystack webhook (Step 7) uses this same ordering.</p>
+
+  <h3>7 · Naming Rules</h3>
+  <table>
+    <tr><th>Rule</th><th>Detail</th></tr>
+    <tr><td>Format</td><td><span class="inline-code">PREFIX-{Date.now()}</span>, client or server generated</td></tr>
+    <tr><td>Uniqueness</td><td><span class="inline-code">Date.now()</span> in ms ensures global uniqueness within a session</td></tr>
+    <tr><td>No slashes</td><td>Slashes appear in Member IBI Numbers (<span class="inline-code">ANA/8263354454</span>) and Purse Wallet addresses (<span class="inline-code">ANA/0000000001</span>) — nowhere else. See §2b for how <span class="inline-code">/verify</span> disambiguates the two.</td></tr>
+    <tr><td>Case</td><td>Stored as-is; verify portal normalises to UPPER before matching</td></tr>
+    <tr><td>Immutable</td><td>References are never modified after creation in Firestore</td></tr>
+    <tr><td>Idempotency</td><td>Each route (and the webhook) checks for a duplicate reference before processing</td></tr>
+  </table>
+</div>
+
+<!-- PRICING -->
+<div class="section" id="pricing">
+  <h2>Pricing & Commission (Admin-Configurable)</h2>
+
+  <div class="card card-green">
+    <p style="margin:0"><strong>All figures below are editable live</strong> from <span class="inline-code">/admin</span> → Pricing tab — no code change or redeploy needed. They're read from one Firestore document (<span class="inline-code">settings/pricing</span>) by every page that shows a price: membership, upgrade modal, affiliate table, and referral-commission payout on approval.</p>
+  </div>
+
+  <h3>Current Registration Fees</h3>
+  <table>
+    <tr><th>Tier</th><th>Fee</th></tr>
+    <tr><td>Student</td><td>₦0</td></tr>
+    <tr><td>Youth</td><td>₦0</td></tr>
+    <tr><td>Professional</td><td>₦50,000</td></tr>
+    <tr><td>Business</td><td>₦100,000</td></tr>
+    <tr><td>Diaspora</td><td>$20</td></tr>
+    <tr><td>Patron</td><td>₦2,500,000</td></tr>
+  </table>
+
+  <h3>Current Commission Rates</h3>
+  <table>
+    <tr><th>Type</th><th>Rate</th><th>Applies To</th></tr>
+    <tr><td>Affiliate Commission</td><td>10%</td><td>Paid registration fees, on admin approval</td></tr>
+    <tr><td>Marketplace Fee</td><td>5%</td><td>Marketplace sale value, on sale completion</td></tr>
+  </table>
+
+  <h3>How to change a price</h3>
+  <div class="step">
+    <div class="step-num">1</div><div class="step-body"><h4>Go to /admin → Pricing tab</h4><p>Requires admin access — see Step 5.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div><div class="step-body"><h4>Edit any fee or rate</h4><p>Registration fees in ₦ (or $ for Diaspora), commission/marketplace rates as a percentage.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div><div class="step-body"><h4>Click Save Pricing</h4><p>Takes effect immediately, sitewide. No deploy, no restart.</p></div>
+  </div>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Diaspora note:</strong> the $20 fee has no automatic ₦-equivalent yet — that requires an admin-set USD exchange rate, which isn't built yet (see roadmap item B-03 in <span class="inline-code">TECH_DEBT_AND_ROADMAP.md</span>). Diaspora payments are exempted from the strict server-side amount-match check for this reason.</p>
+  </div>
+</div>
+
+<!-- ADMIN GUIDE -->
+<div class="section" id="admin">
+  <h2>Admin Panel Guide</h2>
+  <p>Access at <span class="inline-code">/admin</span> after granting yourself admin access (Step 5).</p>
+
+  <h3>Pending Approvals Tab</h3>
+  <div class="status-grid">
+    <div class="status-item"><span class="status-icon">👁️</span><div class="status-text"><strong>View pending applications</strong>Shows name, email, chapter, tier, and payment reference</div></div>
+    <div class="status-item"><span class="status-icon">✅</span><div class="status-text"><strong>Approve</strong>Generates IBI number, sends welcome email, creates affiliate code</div></div>
+    <div class="status-item"><span class="status-icon">❌</span><div class="status-text"><strong>Reject</strong>Enter reason, rejection email sent, member notified</div></div>
+    <div class="status-item"><span class="status-icon">🔄</span><div class="status-text"><strong>Refresh</strong>Reload latest pending list without page reload</div></div>
+  </div>
+
+  <h3>Active Members Tab</h3>
+  <p>Search all active members by name, email, or IBI number. See wallet balance, tier, status. Click <strong>Credit</strong> next to any member to jump to wallet crediting.</p>
+
+  <h3>Credit Wallet Tab</h3>
+  <p>Credit any member's wallet without Paystack:</p>
+  <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:6px;margin:8px 0">
+    <li>Enter IBI number (e.g. <span class="inline-code">LAG/3847291056</span>), email, or Firebase UID</li>
+    <li>Enter amount in Naira (whole numbers only)</li>
+    <li>Enter a note (e.g. "Welcome bonus", "Bank transfer confirmed", "Manual payment")</li>
+    <li>Click Credit — instant, no Paystack needed</li>
+  </ul>
+  <p>This records a transaction in the member's wallet history with your admin note.</p>
+
+  <h3>Chapter Transfers Tab</h3>
+  <p>Review chapter/region transfer applications members submit from their dashboard. Approve updates the member's chapter/chapterCode (their IBI Number and history stay untouched) and fires an email + SMS + in-app bell 🔔 notification automatically. Reject requires a reason, sent to the member the same way. Reference format <span class="inline-code">IBI-CHTRF-...</span>, verifiable at <span class="inline-code">/verify</span>.</p>
+
+  <h3>Org Wallets Tab</h3>
+  <p>National, regional, and chapter purse wallets — superadmin-managed for now. Every scope gets a <strong>Main Purse</strong> and a <strong>Donations</strong> wallet; the national scope additionally gets a third, <strong>Grants</strong> (<span class="inline-code">IBI/0000000003</span>) — regions and chapters don't apply for or hold grant funds independently, this is enforced in code, not just policy.</p>
+  <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:6px;margin:8px 0">
+    <li>National and all 3 regional wallet sets are always shown; chapter wallets are looked up by chapter name (most of the 43 chapters won't have wallets until their first donation/due — created automatically on first transaction)</li>
+    <li><strong>History</strong> expands a wallet's transaction ledger inline — description, reference, date, amount</li>
+    <li><strong>+ Credit</strong> manually credits a wallet (e.g. a bank transfer received outside Paystack)</li>
+    <li>Remittance percentages (chapter→region, region→national) are editable here — stored for the future auto-remittance job, not yet consumed by one</li>
+  </ul>
+
+  <h3>Security Tab</h3>
+  <p>Look up any member by IBI number, email, or UID to place or clear a <strong>PND (Post No Debit)</strong> restriction, or restrict a specific issued card. Available to any admin — these are protective actions, not money movement, so unlike Credit Wallet this isn't superadmin-gated.</p>
+
+  <h3>Pricing Tab</h3>
+  <p>Edit registration fees and commission rates live — see the <a href="#" onclick="show('pricing');return false">Pricing & Commission</a> reference page for the full current values and how it works. Changes apply sitewide immediately, no redeploy.</p>
+
+  <h3>Notifications Tab</h3>
+  <p>Compose and send a notification to one of four audiences — <strong>All Members</strong>, a <strong>Specific Member</strong> (picked from the Active Members list), a <strong>Specific Region</strong>, or a <strong>Specific Chapter</strong> — see the <a href="#" onclick="show('notifications');return false">Notifications</a> reference page. Region and chapter sends fan out to every matching member individually; the response shows the recipient count. Appears in every recipient's dashboard bell icon.</p>
+
+  <h3>Email Verification</h3>
+  <p>Every new registration is sent a verification email automatically (via Brevo, if configured). Members who haven't verified yet see a small banner in their dashboard with a <strong>Resend Email</strong> button — this is a soft nudge, not a hard block, so it doesn't lock out anyone who registered before this existed.</p>
+
+  <h3>Admin Workflow for Paid Members (Launch Day)</h3>
+  <div class="step">
+    <div class="step-num">1</div><div class="step-body"><h4>Member applies online</h4><p>They fill the registration form and submit (with or without Paystack payment).</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div><div class="step-body"><h4>You receive admin email</h4><p>Email notification sent to admin (if Brevo configured). Or check <span class="inline-code">/admin</span> daily.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div><div class="step-body"><h4>Verify payment offline</h4><p>Check your bank account / Paystack dashboard for the matching payment reference.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div><div class="step-body"><h4>Click Approve in admin panel</h4><p>IBI number generated, welcome email sent, affiliate code created automatically.</p></div>
+  </div>
+</div>
+
+<!-- WALLET -->
+<div class="section" id="wallet">
+  <h2>Wallet Without Paystack</h2>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>The IBI Wallet works fully without Paystack.</strong> Paystack is only needed for members to top up their own wallets via card/bank. All other wallet operations work without it.</p>
+  </div>
+
+  <h3>What works without Paystack</h3>
+  <div class="checklist">
+    <div class="check-item"><span class="check-icon">✅</span><span>Admin credits wallet directly (from /admin panel)</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Member-to-member wallet transfers (IBI number to IBI number)</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Wallet debit for card orders and donations</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Affiliate commission payouts to wallet</span></div>
+    <div class="check-item"><span class="check-icon">✅</span><span>Wallet balance display and transaction history</span></div>
+  </div>
+
+  <h3>Launch Day Wallet Strategy</h3>
+  <ul style="padding-left:18px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:8px;margin:8px 0">
+    <li><strong style="color:var(--text)">Pilot members:</strong> Credit their wallets manually via admin panel with welcome bonuses</li>
+    <li><strong style="color:var(--text)">Bank transfers:</strong> When a paid member pays via bank, confirm manually → credit via admin panel</li>
+    <li><strong style="color:var(--text)">When Paystack is ready:</strong> Add <span class="inline-code">PAYSTACK_SECRET_KEY</span> and <span class="inline-code">NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY</span> to env vars. Members can then top up themselves.</li>
+  </ul>
+
+  <h3>Admin Credit API (for automation)</h3>
+  <pre><code>POST /api/admin/credit-wallet
+Authorization: Bearer {admin-id-token}
+
+{
+  "identifier": "LAG/3847291056",  // or email or Firebase UID
+  "amount": 5000,
+  "note": "Welcome bonus"
+}</code></pre>
+</div>
+
+<!-- PIN SECURITY -->
+<div class="section" id="pin-security">
+  <h2>🔒 Wallet PIN Security</h2>
+  <p>Every wallet transfer now requires a session-level PIN, entered once per session the first
+  time a member opens Wallet or Overview. Full technical detail lives in
+  <span class="inline-code">TECH_DEBT_AND_ROADMAP.md</span> → C-01. This page is the quick
+  reference.</p>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>Two PINs, not three.</strong> The original design included a
+    third "flex" PIN that displayed 100x the real balance. It was dropped before being built —
+    a balance display designed to make someone look wealthier than they are is the same
+    mechanism used in proof-of-funds scams, and IBI's own transaction descriptions would have
+    shown real payments as fabricated "premium VIP" amounts. Only <strong>main</strong> and
+    <strong>duress</strong> PINs exist.</p>
+  </div>
+
+  <h3>How it works</h3>
+  <table>
+    <tr><th>PIN</th><th>Behavior</th></tr>
+    <tr><td><strong>Main</strong></td><td>Normal — full real balance shown, full balance available to transfer.</td></tr>
+    <tr><td><strong>Duress</strong> (anti-kidnap)</td><td>Shows and caps everything at <strong>1% of the real balance</strong>. If someone is forced to unlock their wallet under coercion and "sends everything," only 1% of their real money ever actually moves — the other 99% stays completely untouched, invisible to whoever's watching.</td></tr>
+  </table>
+
+  <h3>Where PIN entry happens</h3>
+  <p>Once per browser session, the first time a member opens <span class="inline-code">/dashboard/wallet</span>
+  or <span class="inline-code">/dashboard/overview</span> — not at login, not per-transaction.
+  Balance shows as <span class="inline-code">••••.••</span> until entered. The transfer
+  confirmation modal (review recipient/amount before sending) still applies on top of this —
+  the two are independent, not one replacing the other.</p>
+
+  <h3>Why enforcement is server-side, not client-side</h3>
+  <div class="card card-red">
+    <p style="margin:0">This is the one detail that matters most for the feature to actually
+    work as a duress protection: the duress cap is enforced via an <strong>httpOnly cookie +
+    Firestore session record</strong> (<span class="inline-code">lib/pinSession.ts</span>),
+    never a value the client asserts in a request body. If it were client-asserted, anyone
+    forcing a PIN out of a member could simply edit the request to claim "main mode" and bypass
+    the entire protection. The client-side mode
+    (<span class="inline-code">lib/pinSessionClient.ts</span>, sessionStorage) is display-only —
+    it decides what numbers show on screen, nothing more.</p>
+  </div>
+
+  <h3>Managing PINs</h3>
+  <table>
+    <tr><th>Where</th><th>What it does</th></tr>
+    <tr><td><span class="inline-code">/dashboard/wallet</span></td><td>Contextual only — a PIN change here touches whichever PIN unlocked <em>that specific session</em>, never revealing whether a second PIN exists.</td></tr>
+    <tr><td><span class="inline-code">/dashboard/profile</span></td><td>The only place both PINs are visible and manageable together — change the main PIN, or set up the duress PIN (requires the main PIN to confirm).</td></tr>
+  </table>
+
+  <h3>Security details</h3>
+  <ul style="padding-left:20px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:6px">
+    <li>PINs are hashed with Node's built-in <span class="inline-code">crypto.scrypt</span> — no new dependency added.</li>
+    <li>5 wrong attempts locks PIN entry for 15 minutes. A 4-digit PIN only has 10,000 possible values — hashing alone doesn't meaningfully slow an interactive guesser down; rate-limiting is what actually matters here.</li>
+    <li>Duress-mode overdraft attempts get a deliberately generic "Insufficient wallet balance" error — never anything that would reveal duress mode is active to an onlooker.</li>
+  </ul>
+
+  <div class="card card-blue">
+    <p style="margin:0"><strong>Still open:</strong> the original spec had duress-mode overdraft
+    attempts trigger a PND requiring NIN/document resubmission that silently auto-lifts on the
+    next deposit — flagged as a compliance concern (looks like KYC enforcement happened when it
+    didn't) but not resolved either way yet. See C-01 in the tech debt doc for the open question.</p>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div class="section" id="notifications">
+  <h2>🔔 Notifications</h2>
+  <p>In-app notification system — a bell icon with an unread counter in the dashboard header,
+  backed by a single Firestore <span class="inline-code">notifications</span> collection. Full
+  detail in <span class="inline-code">TECH_DEBT_AND_ROADMAP.md</span> → C-13.</p>
+
+  <h3>What members see</h3>
+  <p>A bell icon in the dashboard header with an unread-count badge. Opening it marks everything
+  read and shows the recent list — transaction alerts ("Money Received", "Transfer Sent",
+  "Wallet Topped Up") fire automatically from the wallet transfer and top-up routes.</p>
+
+  <h3>Admin broadcast</h3>
+  <p><span class="inline-code">/admin</span> → <strong>Notifications tab</strong> — compose a
+  title, message, and optional link, then send to all members or one specific member (picked
+  from the Active Members list). Same mechanism planned for a future IBI Ads push feature — just
+  a different <span class="inline-code">type</span> and richer audience targeting later, no
+  schema change needed.</p>
+
+  <div class="card card-gold">
+    <p style="margin:0"><strong>This is in-app only — not real OS-level push yet.</strong> The
+    bell works immediately for every member with zero setup. Actual push notifications (the kind
+    that show up outside the browser tab) need Firebase Cloud Messaging, which requires
+    generating a VAPID key pair in the Firebase Console — a step only Emmanuel can do. The data
+    model doesn't need to change when that's added; it's an additive follow-up, not a rebuild.</p>
+  </div>
+
+  <h3>Server-routed, same lesson as pricing</h3>
+  <p>Every notification read/write goes through a server route (<span class="inline-code">app/api/notifications/*</span>),
+  never a direct client Firestore call — the same lesson learned the hard way from the pricing
+  panel bug (see Known Gaps C-11): anything that depends on Firestore rules being correctly
+  deployed is one missed <span class="inline-code">firebase deploy</span> away from silently
+  failing.</p>
+</div>
+
+<!-- AFFILIATE -->
+<div class="section" id="affiliate">
+  <h2>Affiliate System</h2>
+
+  <div class="card card-green">
+    <p style="margin:0"><strong>🚀 Affiliate is live on day 1.</strong> Every member who registers (free or paid) gets an affiliate code immediately. No extra setup needed.</p>
+  </div>
+
+  <h3>How it works</h3>
+  <div class="step">
+    <div class="step-num">1</div><div class="step-body"><h4>Member gets affiliate code on registration</h4><p>Free members: code generated instantly. Paid members: code generated on admin approval.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div><div class="step-body"><h4>Member shares their referral link</h4><p><span class="inline-code">igbobuigbo.org.ng/membership?ref=IBICHUKW7X3A</span> — available in /dashboard/affiliate and profile.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div><div class="step-body"><h4>New member registers via link</h4><p>Referral code is pre-filled in the registration form. Member completes registration.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div><div class="step-body"><h4>Commission paid on approval</h4><p>When the new member is approved (instant for free, admin-click for paid), commission credited to referrer's wallet.</p></div>
+  </div>
+
+  <h3>Commission Structure</h3>
+  <p style="font-size:0.85rem">Figures below are the values at time of writing — all editable live from <span class="inline-code">/admin</span> → Pricing tab, see <a href="#" onclick="show('pricing');return false">Pricing & Commission</a>.</p>
+  <table>
+    <tr><th>Referred Tier</th><th>Commission</th><th>Paid When</th></tr>
+    <tr><td>Student / Youth (FREE)</td><td>₦0</td><td>—</td></tr>
+    <tr><td>Professional (₦50,000)</td><td>₦5,000 (10%)</td><td>On admin approval</td></tr>
+    <tr><td>Business (₦100,000)</td><td>₦10,000 (10%)</td><td>On admin approval</td></tr>
+    <tr><td>Diaspora ($20)</td><td>USD→NGN at IBI rate (10%)</td><td>On admin approval</td></tr>
+    <tr><td>Patron (₦2,500,000)</td><td>₦250,000 (10%)</td><td>On admin approval</td></tr>
+    <tr><td>Marketplace sale</td><td>5% of sale value</td><td>On sale completion</td></tr>
+  </table>
+
+  <h3>Member Dashboard</h3>
+  <p>Members see everything in <span class="inline-code">/dashboard/affiliate</span>: total referrals, total earned, pending payout, referral list, commission rates, and their affiliate link with one-click copy and share.</p>
+</div>
+
+<!-- GAPS -->
+<div class="section" id="gaps">
+  <h2>⚠️ Known Gaps Before Mass Registration</h2>
+  <p>Full detail, rationale, and exact fix scope for every item below lives in
+  <span class="inline-code">TECH_DEBT_AND_ROADMAP.md</span> → <strong>PART C — PRE-MASS-REGISTRATION LAUNCH GATE</strong>.
+  This page is the quick-reference version. Nothing here is built yet unless marked ✅.</p>
+
+  <div class="card card-red">
+    <p style="margin:0"><strong>These are gaps identified specifically as blockers (or should-fix items) before
+    opening registration to the general public at scale</strong> — separate from the general tech debt list, which
+    covers correctness issues at current scale. Several items are now resolved or built (marked ✅ below);
+    everything else is scoped and ready to build, not started.</p>
+  </div>
+
+  <h3>🔴 Must-fix before mass registration</h3>
+  <table>
+    <tr><th>#</th><th>Gap</th><th>What's needed</th></tr>
+    <tr><td>TD-18</td><td>✅ Every wallet route had a double-spend race condition</td><td><em>Resolved — the most severe finding across this whole engagement. See <a href="#" onclick="show('wallet');return false">Wallet</a> page and the tech debt doc.</em></td></tr>
+    <tr><td>C-01</td><td>✅ No PIN/2FA on wallet transfers — main + duress PIN</td><td><em>Built — see the <a href="#" onclick="show('pin-security');return false">Wallet PIN Security</a> page. Flex/third PIN dropped. PND-on-overdraft flow and true 2FA for PIN changes still open.</em></td></tr>
+    <tr><td>C-02</td><td>✅ No admin-side kill switches for compromised accounts (PND)</td><td><em>Built — new Security tab in <span class="inline-code">/admin</span>. Per-member PND restriction + per-card restriction, both with a required reason. Balance stays fully visible while restricted, as specified.</em></td></tr>
+    <tr><td>C-03</td><td>✅ Any admin can credit AND debit wallets — superadmin tier built</td><td><em>Built — <span class="inline-code">role: 'admin' | 'superadmin'</span> on admin docs, credit restricted to superadmin, new debit route (superadmin-only). ⚠️ Migration note: existing admins default to non-superadmin — see tech debt doc.</em></td></tr>
+    <tr><td>C-04</td><td>Reconciliation job — defense-in-depth now, root cause closed by TD-18</td><td>Scheduled job (same pattern as the birthday cron) that recomputes balances from transaction history and flags drift or duplicate references — catches bugs outside <span class="inline-code">lib/wallet.ts</span>, not a substitute for it</td></tr>
+    <tr><td>C-05</td><td>Not KYC-ready</td><td><span class="inline-code">kycStatus</span> field + pluggable verification-partner interface, so plugging in a real KYC partner later doesn't require rearchitecting</td></tr>
+  </table>
+
+  <h3>🟡 Should-fix before mass registration</h3>
+  <table>
+    <tr><th>#</th><th>Gap</th><th>What's needed</th></tr>
+    <tr><td>C-06</td><td>No rate limiting on auth or payment endpoints</td><td>Rate limit login, password reset, registration, and wallet routes by IP/account</td></tr>
+    <tr><td>C-07</td><td>No centralized admin audit log</td><td><span class="inline-code">adminAuditLog</span> collection written by every admin-privileged route, with an admin-panel view</td></tr>
+    <tr><td>C-08</td><td>Duplicate/fraudulent registration prevention</td><td>Email dedup already exists — add the same check for phone number; flag referral pairs sharing device/IP fingerprints</td></tr>
+    <tr><td>C-09</td><td>No monitoring/alerting beyond a few hand-built email alerts</td><td>Wire a monitoring service (e.g. Sentry) into every API route's catch block</td></tr>
+    <tr><td>C-10</td><td>Cost/quota planning for mass-scale email and SMS</td><td>Confirm Brevo/Termii budget for expected registration volume — Gmail's ~500/day quota (the primary path before Brevo fallback) will be exhausted quickly at scale</td></tr>
+    <tr><td>C-11</td><td>✅ Admin pricing save failing ("Missing or insufficient permissions")</td><td><em>Resolved, two parts — the write went through a server route (like every other admin write), but pricing still didn't show up anywhere until the <strong>read</strong> side was fixed too: every page reading pricing depended on the settings/pricing Firestore rule being deployed, which silently fails to defaults if missed. Both read and write now go through server routes — see <a href="#" onclick="show('pricing');return false">Pricing & Commission</a>.</em></td></tr>
+    <tr><td>C-12</td><td>✅ Dashboard "Make Donation" quick action left the dashboard</td><td><em>Resolved — now opens the in-dashboard DonateModal, matching sidebar/profile-dropdown behavior</em></td></tr>
+    <tr><td>C-13</td><td>✅ No functional push notification service</td><td><em>In-app foundation built — see <a href="#" onclick="show('notifications');return false">Notifications</a>. Real OS-level push (FCM) is a follow-up needing a Firebase Console VAPID key.</em></td></tr>
+  </table>
+
+  <h3>🟢 Also worth doing (lower urgency, still real)</h3>
+  <ul style="padding-left:20px;color:var(--muted);font-size:0.88rem;display:flex;flex-direction:column;gap:8px">
+    <li><strong>Firestore backup/disaster-recovery plan</strong> — real money is tracked in <span class="inline-code">walletBalance</span> now; losing this data is a financial incident, not a UX inconvenience.</li>
+    <li><strong>Session/device management for members</strong> — companion to C-01, now that main/duress PIN exists.</li>
+    <li><strong>2FA for PIN changes</strong> — C-01's PIN change currently requires the current PIN (standard practice) but not full 2FA (SMS/authenticator) as originally scoped — still open.</li>
+    <li><strong>Data export / deletion request handling</strong> — the Privacy Policy commits to honoring these; no admin tooling exists yet beyond manual Firestore console work.</li>
+    <li><strong>Legal pages need actual legal review</strong> — <span class="inline-code">/faq</span>, <span class="inline-code">/privacy</span>, <span class="inline-code">/terms</span> were drafted this session, accurate to how the platform works today, but written by Claude, not a lawyer. Route to counsel before relying on them at scale.</li>
+    <li><strong>Load-test the registration flow</strong> — Firestore and Paystack rate limits have never been tested against a real registration surge.</li>
+    <li><strong>Email/SMS provider-fee pass-through to members</strong> — charge members the actual (or minimum) provider fee for emails/SMS sent on their behalf, shown on the transaction receipt as a line item, with a per-member opt-out in settings. Researched but not built — see tech debt doc C-10.</li>
+  </ul>
+
+  <div class="card card-green" style="margin-top:16px">
+    <p style="margin:0"><strong>Resolved this session, worth knowing about even though not on the launch-gate list:</strong>
+    the wallet statement/transfer receipt PDF had a blank "Reference No." field (only the QR code
+    worked for verification) — traced to a field-name mismatch between the transfer API
+    (<span class="inline-code">ref</span>) and the client (<span class="inline-code">reference</span>).
+    Also added a review-and-confirm modal before any transfer executes, and wired up the
+    server-side "possible duplicate transfer" detection (built earlier, never connected to the UI)
+    to actually warn members before a deliberate resubmit.</p>
+  </div>
+</div>
+
+<!-- FILES -->
+<div class="section" id="files">
+
+  <h2>Complete File Manifest</h2>
+  <p>Every file in the zip, with its exact path in the Next.js project. The first comment line in each file shows where it belongs.</p>
+
+  <h3>Pages (app/)</h3>
+  <table>
+    <tr><th>File</th><th>Route</th><th>Notes</th></tr>
+    <tr><td>app/page.tsx</td><td>/</td><td>Homepage — SSR, all sections</td></tr>
+    <tr><td>app/layout.tsx</td><td>Root</td><td>Navbar + Footer + fonts</td></tr>
+    <tr><td>app/globals.css</td><td>Global</td><td>IBI design tokens</td></tr>
+    <tr><td>app/login/page.tsx</td><td>/login</td><td>Sign in + forgot password</td></tr>
+    <tr><td>app/membership/page.tsx</td><td>/membership</td><td>Registration — all 6 tiers</td></tr>
+    <tr><td>app/donate/page.tsx</td><td>/donate</td><td>Donation with dual payment</td></tr>
+    <tr><td>app/contact/page.tsx</td><td>/contact</td><td>Contact form → Brevo</td></tr>
+    <tr><td>app/faq/page.tsx</td><td>/faq</td><td>FAQ — membership, wallet, donations, ID cards, affiliate, KYC status</td></tr>
+    <tr><td>app/privacy/page.tsx</td><td>/privacy</td><td>Privacy Policy — draft, needs legal review before mass registration</td></tr>
+    <tr><td>app/terms/page.tsx</td><td>/terms</td><td>Terms of Use — draft, needs legal review before mass registration</td></tr>
+    <tr><td>app/chapters/page.tsx</td><td>/chapters</td><td>All 43 chapters, 3 regions</td></tr>
+    <tr><td>app/admin/page.tsx</td><td>/admin</td><td>Admin panel (admin only) — Pending/Members/Transfers/Org Wallets/Wallet/Pricing/Notifications/Security tabs</td></tr>
+    <tr><td>app/coming-soon/[phase]/page.tsx</td><td>/coming-soon/*</td><td>Waitlist pages</td></tr>
+  </table>
+
+  <h3>Dashboard (app/dashboard/)</h3>
+  <table>
+    <tr><th>File</th><th>Route</th></tr>
+    <tr><td>layout.tsx</td><td>Sidebar layout + nav — Upgrade Tier + Donate modals, email verification banner</td></tr>
+    <tr><td>overview/page.tsx</td><td>/dashboard/overview</td></tr>
+    <tr><td>profile/page.tsx</td><td>/dashboard/profile</td></tr>
+    <tr><td>idcard/page.tsx</td><td>/dashboard/idcard</td></tr>
+    <tr><td>wallet/page.tsx</td><td>/dashboard/wallet</td></tr>
+    <tr><td>affiliate/page.tsx</td><td>/dashboard/affiliate — commission table reads settings/pricing</td></tr>
+    <tr><td>cards/page.tsx</td><td>/dashboard/cards</td></tr>
+    <tr><td>transfer/page.tsx</td><td>/dashboard/transfer</td></tr>
+  </table>
+
+  <h3>API Routes (app/api/)</h3>
+  <table>
+    <tr><th>File</th><th>Purpose</th></tr>
+    <tr><td>auth/verify/route.ts</td><td>Token verification for middleware</td></tr>
+    <tr><td>auth/session/route.ts</td><td>Set/clear session cookie</td></tr>
+    <tr><td>membership/register/route.ts</td><td>Registration — auto-approves free tiers</td></tr>
+    <tr><td>membership/transfer/route.ts</td><td>Chapter transfer application</td></tr>
+    <tr><td>admin/members/route.ts</td><td>List pending + active members</td></tr>
+    <tr><td>admin/approve-member/route.ts</td><td>Approve/reject/suspend members</td></tr>
+    <tr><td>admin/credit-wallet/route.ts</td><td>Admin wallet credit — superadmin-only (C-03), atomic (TD-18)</td></tr>
+    <tr><td>admin/debit-wallet/route.ts</td><td>Admin wallet debit — superadmin-only, bypasses PND (C-03)</td></tr>
+    <tr><td>admin/pnd/route.ts</td><td>Set/clear a member's PND restriction (C-02)</td></tr>
+    <tr><td>admin/cards/restrict/route.ts</td><td>Restrict/unrestrict a specific issued card (C-02)</td></tr>
+    <tr><td>admin/whoami/route.ts</td><td>Current admin's role, for UI gating</td></tr>
+    <tr><td>admin/member-lookup/route.ts</td><td>Member + cards + PND status lookup, feeds the Security tab</td></tr>
+    <tr><td>admin/pricing/route.ts</td><td>Save settings/pricing — server-side, matches credit-wallet's auth pattern (C-11 part 1)</td></tr>
+    <tr><td>admin/set-admin/route.ts</td><td>Bootstrap admin access</td></tr>
+    <tr><td>member/update/route.ts</td><td>Profile updates</td></tr>
+    <tr><td>wallet/topup/route.ts</td><td>Paystack wallet top-up — atomic (TD-18), verifies actual Paystack amount before crediting</td></tr>
+    <tr><td>wallet/debit/route.ts</td><td>Wallet payment — atomic (TD-18)</td></tr>
+    <tr><td>wallet/transfer/route.ts</td><td>Member-to-member transfer — atomic (TD-18), duplicate-transfer warning, server-enforced duress cap</td></tr>
+    <tr><td>wallet/pin/set/route.ts</td><td>Set/change main wallet PIN</td></tr>
+    <tr><td>wallet/pin/set-duress/route.ts</td><td>Set up duress PIN (requires main PIN)</td></tr>
+    <tr><td>wallet/pin/verify/route.ts</td><td>Verify a PIN, issues the server-side duress session</td></tr>
+    <tr><td>wallet/pin/status/route.ts</td><td>Check whether a PIN is set up yet</td></tr>
+    <tr><td>notifications/route.ts</td><td>Fetch a member's notifications + unread count</td></tr>
+    <tr><td>notifications/mark-read/route.ts</td><td>Mark one or all notifications read</td></tr>
+    <tr><td>admin/notifications/route.ts</td><td>Admin-only broadcast/targeted notification send</td></tr>
+    <tr><td>pricing/route.ts</td><td>Public pricing read — server-side, no Firestore-rules dependency (C-11 part 2)</td></tr>
+    <tr><td>affiliate/withdraw/route.ts</td><td>Commission withdrawal to wallet</td></tr>
+    <tr><td>cards/order/route.ts</td><td>IBI card ordering — verifies Paystack amount matches price</td></tr>
+    <tr><td>escrow/release/route.ts</td><td>3-gate escrow release</td></tr>
+    <tr><td>donate/route.ts</td><td>Donation recording — atomic wallet debit for wallet method, amount-verified for Paystack</td></tr>
+    <tr><td>contact/route.ts</td><td>Contact form → Brevo</td></tr>
+    <tr><td>waitlist/route.ts</td><td>Coming-soon waitlist</td></tr>
+    <tr><td>webhooks/paystack/route.ts</td><td>Server-side safety net for interrupted payments — see Step 7</td></tr>
+    <tr><td>auth/resend-verification/route.ts</td><td>Resend the email-verification link</td></tr>
+  </table>
+
+  <h3>Components & Lib</h3>
+  <table>
+    <tr><th>File</th><th>Purpose</th></tr>
+    <tr><td>components/Navbar.tsx</td><td>Sticky nav, mobile hamburger, auth state</td></tr>
+    <tr><td>components/Footer.tsx</td><td>Full footer (user's version)</td></tr>
+    <tr><td>components/HomeBanner.tsx</td><td>Stats + Who We Are + video</td></tr>
+    <tr><td>components/MembershipTiers.tsx</td><td>Full tier cards for homepage</td></tr>
+    <tr><td>components/AdvertiseSection.tsx</td><td>Advertise With Us section</td></tr>
+    <tr><td>components/HeroCardShowcase.tsx</td><td>Demo cards in hero</td></tr>
+    <tr><td>components/DualPayment.tsx</td><td>Paystack + IBI Wallet selector (amount prop is always Naira)</td></tr>
+    <tr><td>components/dashboard/DonateModal.tsx</td><td>In-dashboard donate modal — logged-in members give without leaving the dashboard</td></tr>
+    <tr><td>components/dashboard/UpgradeTierModal.tsx</td><td>In-dashboard tier upgrade modal — prices read from settings/pricing</td></tr>
+    <tr><td>components/dashboard/VerifyEmailBanner.tsx</td><td>Soft nudge banner + resend button for unverified emails</td></tr>
+    <tr><td>components/CardImageWithFallback.tsx</td><td>Card images with client-side fallback</td></tr>
+    <tr><td>components/AffiliateButton.tsx</td><td>Copy affiliate link</td></tr>
+    <tr><td>components/FloatingButtons.tsx</td><td>Back to top + back to home FABs</td></tr>
+    <tr><td>components/LogoCircle.tsx</td><td>Logo with png→svg fallback</td></tr>
+    <tr><td>lib/firebase.ts</td><td>Client SDK (browser only)</td></tr>
+    <tr><td>lib/firebase-admin.ts</td><td>Admin SDK (server only)</td></tr>
+    <tr><td>lib/pricing-shared.ts</td><td>Pure types/defaults/merge logic — zero React or Firebase-client imports, safe for both bundles</td></tr>
+    <tr><td>lib/pricing.ts</td><td>Client-side pricing settings source + usePricingSettings() hook — imports lib/pricing-shared.ts</td></tr>
+    <tr><td>lib/pricing-server.ts</td><td>Server-side (admin SDK) pricing settings reader, for API routes — imports lib/pricing-shared.ts, NEVER lib/pricing.ts (that broke the webpack build once already)</td></tr>
+    <tr><td>lib/donate-causes.ts</td><td>Shared donation causes/presets — public donate page + dashboard modal</td></tr>
+    <tr><td>lib/emailVerification.ts</td><td>Generates + sends the branded verification email (TD-12)</td></tr>
+    <tr><td>lib/wallet.ts</td><td>Atomic wallet operations (atomicDebit/atomicCredit/atomicTransfer) — closes TD-18, the double-spend race condition, now also enforces PND restrictions (C-02). Every wallet-money-movement route uses this instead of its own read-check-write logic.</td></tr>
+    <tr><td>lib/admins.ts</td><td>Admin role checking (admin vs superadmin) — C-03</td></tr>
+    <tr><td>lib/pin.ts</td><td>PIN hashing (Node's crypto.scrypt) + rate-limiting (C-01)</td></tr>
+    <tr><td>lib/pinSession.ts</td><td>SERVER-side duress-session tracking (httpOnly cookie + Firestore) — actually enforces the duress cap</td></tr>
+    <tr><td>lib/pinSessionClient.ts</td><td>CLIENT-side display-only PIN mode (sessionStorage) — cosmetic only, never trusted for enforcement</td></tr>
+    <tr><td>lib/notifications.ts</td><td>In-app notification creation (C-13)</td></tr>
+    <tr><td>lib/AuthContext.tsx</td><td>Auth + member real-time state</td></tr>
+    <tr><td>lib/auth-middleware.ts</td><td>API route auth helper</td></tr>
+    <tr><td>lib/paystack-inline.ts</td><td>Safe Paystack popup loader</td></tr>
+    <tr><td>lib/paystack.ts</td><td>Server-side Paystack transaction verification</td></tr>
+    <tr><td>lib/brevo.ts</td><td>Email (no-op if key missing)</td></tr>
+    <tr><td>lib/termii.ts</td><td>SMS (no-op if key missing)</td></tr>
+    <tr><td>lib/chapters-data.ts</td><td>All 43 chapters, regions, zones</td></tr>
+    <tr><td>middleware.ts</td><td>Auth protection for /dashboard + /admin — redirect destination carried via cookie, not query string</td></tr>
+    <tr><td>firestore.rules</td><td>Security rules — deploy with firebase CLI</td></tr>
+    <tr><td>firestore.indexes.json</td><td>Composite indexes — deploy with firebase CLI (Step 4)</td></tr>
+    <tr><td>PREFIXES.md</td><td>Full reference prefix inventory — see Reference Prefixes page</td></tr>
+    <tr><td>TECH_DEBT_AND_ROADMAP.md</td><td>Living tech debt + roadmap doc, authoritative for what's done vs open</td></tr>
+  </table>
+</div>
+
+</main>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => {
+    if (b.getAttribute('onclick')?.includes(`'${id}'`)) b.classList.add('active');
+  });
+  window.scrollTo({ top: 0 });
+}
+
+function copyCode(btn) {
+  const pre = btn.parentElement;
+  const code = pre.querySelector('code').textContent.trim();
+  navigator.clipboard.writeText(code).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = '#4ade80';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+  });
+}
+</script>
+</body>
+</html>

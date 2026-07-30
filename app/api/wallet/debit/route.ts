@@ -1,55 +1,39 @@
 // app/api/wallet/debit/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { sendSMS } from '@/lib/termii';
+import { atomicDebit, InsufficientBalanceError, DuressCapExceededError, MemberNotFoundError, PndRestrictedError } from '@/lib/wallet';
+import { requireTransactionPin, pinErrorResponse } from '@/lib/pin';
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyAuth(req);
-  if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const auth = await verifyAuth(req);
+    if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { amount, ref, metadata } = await req.json();
+    const { amount, description, ref, clientRequestId, pin } = await req.json();
+    if (!amount || amount <= 0) return NextResponse.json({ error: 'Valid amount required' }, { status: 400 });
 
-  if (!amount || amount < 100) {
-    return NextResponse.json({ error: 'amount (min ₦100) required' }, { status: 400 });
+    let pinMode: 'main' | 'duress';
+    try {
+      pinMode = await requireTransactionPin(auth.uid, pin);
+    } catch (e: any) {
+      const { status, body } = pinErrorResponse(e);
+      return NextResponse.json(body, { status });
+    }
+
+    const result = await atomicDebit(auth.uid, amount, {
+      description: description ?? 'Wallet Payment',
+      ref: ref ?? `DBT-${Date.now()}`,
+      clientRequestId,
+      mode: pinMode,
+    });
+
+    return NextResponse.json({ success: true, newBalance: result.newBalance, duplicate: result.duplicate });
+  } catch (e: any) {
+    if (e instanceof InsufficientBalanceError) return NextResponse.json({ error: e.message }, { status: 400 });
+    if (e instanceof DuressCapExceededError)   return NextResponse.json({ error: e.message }, { status: 400 });
+    if (e instanceof MemberNotFoundError)      return NextResponse.json({ error: e.message }, { status: 404 });
+    if (e instanceof PndRestrictedError)      return NextResponse.json({ error: e.message }, { status: 403 });
+    console.error('[wallet/debit]', e);
+    return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
   }
-
-  // Idempotency check
-  const dupSnap = await adminDb.collection('transactions').where('ref', '==', ref).limit(1).get();
-  if (!dupSnap.empty) {
-    return NextResponse.json({ error: 'Transaction already processed' }, { status: 409 });
-  }
-
-  const memberRef  = adminDb.collection('members').doc(auth.uid);
-  const memberSnap = await memberRef.get();
-  const member     = memberSnap.data()!;
-
-  if ((member.walletBalance ?? 0) < amount) {
-    return NextResponse.json({ error: 'Insufficient wallet balance' }, { status: 400 });
-  }
-
-  const newBalance = (member.walletBalance ?? 0) - amount;
-  const reference  = ref ?? `IBI-WLT-DEB-${Date.now()}`;
-
-  await memberRef.update({ walletBalance: newBalance });
-
-  await adminDb.collection('transactions').add({
-    uid:         auth.uid,
-    type:        'debit',
-    amount,
-    description: metadata?.description ?? 'Wallet Payment',
-    ref:         reference,
-    balance:     newBalance,
-    metadata:    metadata ?? {},
-    createdAt:   new Date(),
-  });
-
-  if (member.phone) {
-    await sendSMS(
-      member.phone,
-      `IBI Wallet: ₦${amount.toLocaleString()} debited. Balance: ₦${newBalance.toLocaleString()}. Ref: ${reference.slice(-8)}. - Igbobuigbo`
-    );
-  }
-
-  return NextResponse.json({ success: true, reference, newBalance });
 }

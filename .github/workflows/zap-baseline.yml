@@ -1,0 +1,51 @@
+name: OWASP ZAP Baseline Scan (Staging)
+#
+# Passive-only security scan — spiders the staging site and analyzes
+# traffic for common issues (missing security headers, cookie flags,
+# information disclosure) WITHOUT submitting forms or attacking
+# endpoints. Safe to run on a schedule against a real deployment.
+#
+# Deliberately NOT a full/active scan — this app sends real SMS
+# (Termii) and email (Brevo) on many form submissions, and an active
+# scan fuzzes forms repeatedly. Running active mode here would be a
+# real cost-abuse vector against the app's own SMS/email budget, not
+# just a security test. If you want an active scan later, do it
+# manually, against staging only, with the excluded-paths list in
+# .zap/rules.tsv extended to skip every SMS/email/Paystack-triggering
+# route first.
+#
+# SETUP:
+#   1. Set the STAGING_URL repo variable (Settings → Secrets and
+#      variables → Actions → Variables) to your staging deployment,
+#      e.g. https://staging.igbobuigbo.org.ng — never point this at
+#      production.
+#   2. That's it — this runs automatically every Monday 03:00 UTC, and
+#      can be triggered manually from the Actions tab (workflow_dispatch).
+#   3. Results appear as a GitHub Issue (auto-created/updated) and as
+#      a downloadable HTML/Markdown report attached to the workflow run.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # Every Monday 03:00 UTC
+  workflow_dispatch: {}     # Allows manual "Run workflow" from the Actions tab
+
+jobs:
+  zap_baseline_scan:
+    runs-on: ubuntu-latest
+    name: ZAP Baseline Scan
+    steps:
+      - name: Checkout (for .zap/rules.tsv)
+        uses: actions/checkout@v4
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ vars.STAGING_URL }}
+          rules_file_name: '.zap/rules.tsv'
+          # Creates/updates a GitHub Issue with findings — nothing extra
+          # to configure, uses the built-in GITHUB_TOKEN.
+          issue_title: 'OWASP ZAP Baseline Scan Report'
+          # Fails the workflow run (red X) if ZAP finds any WARN/FAIL-level
+          # alert not explicitly downgraded in rules.tsv — set to false if
+          # you'd rather just review the report without a failing check.
+          fail_action: false

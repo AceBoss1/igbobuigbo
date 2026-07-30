@@ -2,73 +2,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { sendSMS } from '@/lib/termii';
+import { requireTransactionPin, pinErrorResponse } from '@/lib/pin';
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyAuth(req);
-  if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const auth = await verifyAuth(req);
+    if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { amount } = await req.json();
+    const { amount, pin } = await req.json();
+    if (!amount || amount < 500) {
+      return NextResponse.json({ error: 'Minimum withdrawal is ₦500' }, { status: 400 });
+    }
 
-  if (!amount || amount < 500) {
-    return NextResponse.json({ error: 'Minimum withdrawal is ₦500' }, { status: 400 });
+    // This moves commission into the member's own wallet rather than out
+    // of it, but it's still a PIN-gated money-moving action per policy —
+    // required fresh, every time, same as debit/transfer.
+    try {
+      await requireTransactionPin(auth.uid, pin);
+    } catch (e: any) {
+      const { status, body } = pinErrorResponse(e);
+      return NextResponse.json(body, { status });
+    }
+
+    const memberRef  = adminDb.collection('members').doc(auth.uid);
+    const memberSnap = await memberRef.get();
+    if (!memberSnap.exists) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+
+    const member     = memberSnap.data()!;
+    const newBalance = (member.walletBalance ?? 0) + amount;
+    await memberRef.update({ walletBalance: newBalance });
+
+    // Mark referrals as paid
+    const pendingSnap = await adminDb.collection('referrals')
+      .where('referrerUid','==',auth.uid)
+      .where('status','==','pending')
+      .get();
+    const batch = adminDb.batch();
+    pendingSnap.docs.forEach(d => batch.update(d.ref, { status:'paid' }));
+    await batch.commit();
+
+    await adminDb.collection('transactions').add({
+      uid: auth.uid, type:'credit', amount,
+      description: 'Affiliate Commission Payout',
+      ref: `AFF-PAY-${Date.now()}`,
+      balance: newBalance, createdAt: new Date(),
+    });
+
+    return NextResponse.json({ success: true, newBalance });
+  } catch (e: any) {
+    console.error('[affiliate/withdraw]', e);
+    return NextResponse.json({ error: e.message ?? 'Server error' }, { status: 500 });
   }
-
-  // Fetch pending referral earnings
-  const referralsSnap = await adminDb.collection('referrals')
-    .where('referrerUid', '==', auth.uid)
-    .where('status', '==', 'active')
-    .get();
-
-  const totalPending = referralsSnap.docs.reduce((s, d) => s + (d.data().commission ?? 0), 0);
-
-  if (amount > totalPending) {
-    return NextResponse.json({ error: `Only ₦${totalPending.toLocaleString()} is available` }, { status: 400 });
-  }
-
-  // Credit wallet
-  const memberRef  = adminDb.collection('members').doc(auth.uid);
-  const memberSnap = await memberRef.get();
-  const member     = memberSnap.data()!;
-  const newBalance = (member.walletBalance ?? 0) + amount;
-
-  const ref = `IBI-AFF-WD-${Date.now()}`;
-  const now = new Date();
-
-  const batch = adminDb.batch();
-
-  // Update wallet
-  batch.update(memberRef, { walletBalance: newBalance });
-
-  // Transaction record
-  const txRef = adminDb.collection('transactions').doc();
-  batch.set(txRef, {
-    uid:         auth.uid,
-    type:        'credit',
-    amount,
-    description: 'Affiliate Commission Withdrawal',
-    ref,
-    balance:     newBalance,
-    createdAt:   now,
-  });
-
-  // Mark withdrawn referrals (up to the amount)
-  let remaining = amount;
-  for (const doc of referralsSnap.docs) {
-    if (remaining <= 0) break;
-    const commission = doc.data().commission ?? 0;
-    batch.update(doc.ref, { status: 'withdrawn', withdrawnAt: now, withdrawRef: ref });
-    remaining -= commission;
-  }
-
-  await batch.commit();
-
-  if (member.phone) {
-    await sendSMS(
-      member.phone,
-      `IBI Affiliate: ₦${amount.toLocaleString()} commission moved to your IBI Wallet. Balance: ₦${newBalance.toLocaleString()}. Ref: ${ref.slice(-8)}. - IBI`
-    );
-  }
-
-  return NextResponse.json({ success: true, amount, newBalance, reference: ref });
 }

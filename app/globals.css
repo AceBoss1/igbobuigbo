@@ -473,3 +473,57 @@ code { font-family: var(--font-mono); }
   font-size: 1.05rem;
   max-width: 600px;
 }
+
+/* ============================================================
+   HOVER UTILITY CLASSES
+   Used by Server Components (Footer, etc.) instead of
+   onMouseEnter/onMouseLeave inline handlers.
+   ============================================================ */
+
+/* Link hover: muted → primary */
+.hover-text-primary {
+  color: var(--text-muted);
+  transition: color var(--duration-fast);
+}
+.hover-text-primary:hover { color: var(--text-primary); }
+
+/* Social icon hover: border + color gold */
+.hover-gold-border {
+  color: var(--text-muted);
+  transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+.hover-gold-border:hover {
+  color: var(--ibi-gold);
+  border-color: var(--ibi-gold) !important;
+}
+
+/* Nav link hover */
+.hover-nav-link {
+  transition: color var(--duration-fast);
+}
+.hover-nav-link:hover { color: var(--text-primary); }
+
+/* Card hover: lift + gold border */
+.hover-card {
+  transition: border-color var(--duration-med), box-shadow var(--duration-med), transform var(--duration-med);
+}
+.hover-card:hover {
+  border-color: var(--border-gold) !important;
+  box-shadow: var(--shadow-gold);
+  transform: translateY(-2px);
+}
+
+/* Button scale hover */
+.hover-scale {
+  transition: transform var(--duration-fast);
+}
+.hover-scale:hover { transform: scale(1.08); }
+
+/* Dropdown item hover */
+.hover-dropdown-item {
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.hover-dropdown-item:hover {
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+}

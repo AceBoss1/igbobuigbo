@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() { return request.auth != null; }
+    function isOwner(uid) { return isAuth() && request.auth.uid == uid; }
+    function isAdmin() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Members — self/admin READ only. ALL writes (registration, profile
+    // edits, admin approvals, wallet/PIN/tier changes) go through server
+    // API routes using the Admin SDK (app/api/membership/register,
+    // app/api/member/update, app/api/admin/*), which is never subject to
+    // these rules. Client-side create/update must stay `false` — the
+    // Firebase client config is public by design, so without this, any
+    // signed-in member could open devtools and call updateDoc() directly
+    // to set their own walletBalance, membershipTier, status, or null out
+    // pinHash (which would defeat the entire PIN-per-transaction system,
+    // since verifyMemberPin() in lib/pin.ts reads pinHash straight off
+    // this document).
+    match /members/{uid} {
+      allow read:   if isOwner(uid) || isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Transactions — member reads own (no orderBy index needed client-side)
+    match /transactions/{docId} {
+      allow read:  if isAuth() && resource.data.uid == request.auth.uid;
+      allow write: if false; // server-side API only
+    }
+
+    // Referrals
+    match /referrals/{docId} {
+      allow read:  if isAuth() && resource.data.referrerUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Affiliate stats
+    match /affiliateStats/{docId} {
+      allow read:  if isAuth() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Card orders
+    match /cardOrders/{docId} {
+      allow read:  if isAuth() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Chapter transfers
+    match /transfers/{docId} {
+      allow read:  if isAuth() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Admin logs — admin read only
+    match /adminLogs/{docId} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // Rate-limit counters (lib/rateLimit.ts) — server-only bookkeeping,
+    // never read or written by any client.
+    match /rateLimits/{docId} {
+      allow read:  if false;
+      allow write: if false;
+    }
+
+    // National/regional/chapter purse wallets (lib/orgWallets.ts) —
+    // superadmin-managed for now via /api/admin/org-wallets/*. Admin read
+    // allowed for visibility/debugging; all writes go through the Admin
+    // SDK server routes, which aren't subject to these rules anyway.
+    match /orgWallets/{docId} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+    match /orgWalletTransactions/{docId} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // Admins — only admins can read this collection
+    match /admins/{uid} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // Public read collections
+    match /events/{docId}      { allow read: if true; }
+    match /news/{docId}        { allow read: if true; }
+    match /stats/{docId}       { allow read: if true; }
+    match /causeTotals/{docId} { allow read: if true; }
+
+    // Settings (e.g. settings/pricing) — publicly readable since prices
+    // need to show on public pages (membership, donate) without login;
+    // only admins can change them. Previously had NO rule at all here,
+    // meaning lib/pricing.ts's client-side read was being silently
+    // denied and falling back to defaults every time.
+    match /settings/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+  }
+}
