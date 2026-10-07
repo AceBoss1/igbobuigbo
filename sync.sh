@@ -7,15 +7,28 @@ REMOTE="origin"
 echo "Fetching latest from $REMOTE..."
 git fetch "$REMOTE" || { echo "Fetch failed"; exit 1; }
 
-# Uncommitted local changes: commit them first so nothing is lost
+# Uncommitted local changes: review them before committing
 if [ -n "$(git status --porcelain)" ]; then
-  echo "You have uncommitted changes."
-  read -p "Commit them now? (y/n) " ans
+  echo "You have uncommitted changes:"
+  git status --porcelain | while IFS= read -r line; do
+    code="${line:0:2}"; file="${line:3}"
+    case "$code" in
+      *D*)  echo "  [DELETED]  $file   <-- will be removed from the repo" ;;
+      "??") echo "  [NEW]      $file" ;;
+      *R*)  echo "  [RENAMED]  $file" ;;
+      *)    echo "  [MODIFIED] $file" ;;
+    esac
+  done
+  if git status --porcelain | grep -q '^.D\|^D'; then
+    echo "WARNING: some files are marked DELETED. Check they are intentional."
+  fi
+  read -p "Commit ALL of these? (y/n) " ans
   if [ "$ans" = "y" ]; then
     read -p "Commit message: " msg
     git add -A && git commit -m "${msg:-Update}"
   else
-    echo "Commit or stash your changes first. Aborting."
+    echo "Nothing committed. Restore a deleted file with: git restore <file>"
+    echo "Or commit selectively with git add <file>, then run this script again."
     exit 1
   fi
 fi
