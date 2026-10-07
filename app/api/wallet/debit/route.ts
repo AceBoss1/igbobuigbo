@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { atomicDebit, InsufficientBalanceError, DuressCapExceededError, MemberNotFoundError, PndRestrictedError } from '@/lib/wallet';
+import { isValidAmount } from '@/lib/validate';
 import { requireTransactionPin, pinErrorResponse } from '@/lib/pin';
 
 export async function POST(req: NextRequest) {
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { amount, description, ref, clientRequestId, pin } = await req.json();
-    if (!amount || amount <= 0) return NextResponse.json({ error: 'Valid amount required' }, { status: 400 });
+    if (!isValidAmount(amount)) return NextResponse.json({ error: 'Valid amount required' }, { status: 400 });
 
     let pinMode: 'main' | 'duress';
     try {

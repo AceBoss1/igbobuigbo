@@ -25,6 +25,8 @@ interface EmailParams {
   subject: string;
   html:    string;
   text?:   string;
+  replyTo?: string;
+  name?:   string; // recipient display name (Brevo only)
 }
 
 /** Returns today's date string in WAT (Nigeria time, UTC+1) — used as the Firestore doc ID */

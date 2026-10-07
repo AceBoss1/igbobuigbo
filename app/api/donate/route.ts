@@ -13,6 +13,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { verifyPaystackTransaction } from '@/lib/paystack';
 import { sendEmailSmart as sendEmail } from '@/lib/emailRouter';
+import { isValidAmount } from '@/lib/validate';
 import { atomicDebit, InsufficientBalanceError, DuressCapExceededError, MemberNotFoundError, PndRestrictedError } from '@/lib/wallet';
 import { requireTransactionPin, pinErrorResponse } from '@/lib/pin';
 import { creditOrgWallet, chapterWalletCode, matchChapterFromText, NATIONAL_CODE } from '@/lib/orgWallets';
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const { cause, amount, name, email, message, method, reference, clientRef, pin, chapterName } = await req.json();
 
-    if (!cause || !amount || amount < 100) {
+    if (!cause || !isValidAmount(amount) || amount < 100) {
       return NextResponse.json({ error: 'Invalid donation data' }, { status: 400 });
     }
 

@@ -72,7 +72,7 @@ export default function AffiliatePage() {
     try {
       const res  = await fetch('/api/affiliate/withdraw', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body:   JSON.stringify({ amount: pendingPay, pin }),
+        body:   JSON.stringify({ pin }), // amount is computed server-side
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

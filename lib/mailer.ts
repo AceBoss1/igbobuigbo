@@ -50,6 +50,7 @@ export interface MailOptions {
   html:    string;
   text?:   string;
   from?:   string;
+  replyTo?: string;
 }
 
 /**
@@ -70,6 +71,7 @@ export async function sendMail(opts: MailOptions): Promise<void> {
     subject: opts.subject,
     html:    opts.html,
     text:    opts.text,
+    replyTo: opts.replyTo,
   });
 }
 

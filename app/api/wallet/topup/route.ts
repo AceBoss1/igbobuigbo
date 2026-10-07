@@ -4,6 +4,7 @@ import { verifyAuth } from '@/lib/auth-middleware';
 import { verifyPaystackTransaction } from '@/lib/paystack';
 import { atomicCredit, MemberNotFoundError } from '@/lib/wallet';
 import { notifyTransaction } from '@/lib/notifications';
+import { isValidAmount } from '@/lib/validate';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { reference, amount } = await req.json();
-    if (!amount || amount < 100) {
+    if (!isValidAmount(amount) || amount < 100) {
       return NextResponse.json({ error: 'Amount must be at least ₦100' }, { status: 400 });
     }
     if (!reference) {

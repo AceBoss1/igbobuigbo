@@ -86,7 +86,7 @@ export async function getOrCreateOrgWalletSet(
       await ref.set({
         address: walletAddress(scopeCode, kind), scope, scopeCode, scopeName, kind,
         balance: 0, totalReceived: 0, createdAt: new Date(),
-      } as OrgWallet);
+      } as unknown as OrgWallet);
     }
   }));
   return {

@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { atomicTransfer, InsufficientBalanceError, DuressCapExceededError, MemberNotFoundError, PndRestrictedError } from '@/lib/wallet';
+import { atomicTransfer, InsufficientBalanceError, DuressCapExceededError, MemberNotFoundError, PndRestrictedError, InvalidAmountError } from '@/lib/wallet';
 import { notifyTransaction } from '@/lib/notifications';
+import { isValidAmount } from '@/lib/validate';
 import { requireTransactionPin, pinErrorResponse } from '@/lib/pin';
 
 // Accept "LAG/3847291056" OR just "3847291056" — strip chapter prefix
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { recipientIbiNumber, amount, note, clientRequestId, confirmDuplicate, pin } = await req.json();
-    if (!recipientIbiNumber || !amount || amount < 100) {
+    if (!recipientIbiNumber || !isValidAmount(amount) || amount < 100) {
       return NextResponse.json({ error: 'recipientIbiNumber and amount (min ₦100) required' }, { status: 400 });
     }
 
@@ -150,6 +151,7 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     if (e instanceof InsufficientBalanceError) return NextResponse.json({ error: e.message }, { status: 400 });
     if (e instanceof DuressCapExceededError)   return NextResponse.json({ error: e.message }, { status: 400 }); // same generic message/status as InsufficientBalanceError — deliberately indistinguishable
+    if (e instanceof InvalidAmountError)       return NextResponse.json({ error: e.message }, { status: 400 });
     if (e instanceof MemberNotFoundError)      return NextResponse.json({ error: e.message }, { status: 404 });
     if (e instanceof PndRestrictedError)      return NextResponse.json({ error: e.message }, { status: 403 });
     console.error('[wallet/transfer]', e);

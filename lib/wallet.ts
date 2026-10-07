@@ -26,6 +26,9 @@
 import { adminDb } from '@/lib/firebase-admin';
 import type { Transaction } from 'firebase-admin/firestore';
 import { DURESS_CAP_DIVISOR } from '@/lib/pin';
+import { assertValidAmount, InvalidAmountError } from '@/lib/validate';
+
+export { InvalidAmountError };
 
 export class InsufficientBalanceError extends Error {
   constructor(public balance: number, public requested: number) {
@@ -77,6 +80,7 @@ async function findDuplicate(t: Transaction, uid: string, clientRequestId?: stri
 
 /** Atomically debits a single member's wallet. Throws InsufficientBalanceError / MemberNotFoundError. */
 export async function atomicDebit(uid: string, amount: number, meta: TxMeta) {
+  assertValidAmount(amount);
   const memberRef = adminDb.collection('members').doc(uid);
 
   return adminDb.runTransaction(async (t) => {
@@ -106,6 +110,7 @@ export async function atomicDebit(uid: string, amount: number, meta: TxMeta) {
 
 /** Atomically credits a single member's wallet. Throws MemberNotFoundError. */
 export async function atomicCredit(uid: string, amount: number, meta: TxMeta) {
+  assertValidAmount(amount);
   const memberRef = adminDb.collection('members').doc(uid);
 
   return adminDb.runTransaction(async (t) => {
@@ -139,6 +144,7 @@ export async function atomicTransfer(
   senderUid: string, recipientUid: string, amount: number,
   meta: { ref: string; clientRequestId?: string | null; senderDescription: string; recipientDescription: string; mode?: 'main' | 'duress' },
 ) {
+  assertValidAmount(amount);
   const senderRef    = adminDb.collection('members').doc(senderUid);
   const recipientRef = adminDb.collection('members').doc(recipientUid);
 
