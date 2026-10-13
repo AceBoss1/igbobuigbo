@@ -1,5 +1,5 @@
 # IBI Member Portal — Tech Debt Report & Build Roadmap
-*Prepared by Adams Consults · June 2026 · Last major update: July 2026*
+*Prepared by Adams Consults · June 2026 · Last major update: July 2026.*
 
 ---
 
